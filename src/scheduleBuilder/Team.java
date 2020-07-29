@@ -1,24 +1,34 @@
 package scheduleBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Team {
 	public final int id;
-	public static int maxStand = 21;
-	public static int maxConsecutive = 14;
+	public static final int maxStand = 21;
+	public static final int maxConsecutive = 14;
+	private static final List<Team> teams = new ArrayList<>();
 	private TeamSchedule schedule;
 	private int consecutiveHomeGames;
 	private int consecutiveRoadGames;
 	private int gamesWithoutBreak;
-	private int totalGames;
-	private int homeGames;
 	
 	public Team (int i) {
 		this.consecutiveHomeGames=0;
 		this.consecutiveRoadGames=0;
 		this.gamesWithoutBreak=0;
-		this.totalGames=0;
-		this.homeGames=0;
 		this.id = i;
 		this.schedule = new TeamSchedule();
+		Team.teams.add(this);
+	}
+	
+	public static Team findTeamWithID(int target) {
+		for(Team t : teams) {
+			if (t.id==target) {
+				return t;
+			}
+		}
+		return null;
 	}
 	
 	public TeamSchedule getSchedule() {
@@ -32,21 +42,13 @@ public class Team {
 	 * Else returns 0
 	 */
 	public int scheduleAlert() {
-		if (this.gamesWithoutBreak > Team.maxConsecutive-Series.MaxSeriesLen) {
+		if (this.gamesWithoutBreak > Team.maxConsecutive-Series.getMaxSeriesLen()) {
 			return 1;
-		}else if(this.consecutiveHomeGames > Team.maxStand-Series.MaxSeriesLen) {
+		}else if(this.consecutiveHomeGames > Team.maxStand-Series.getMaxSeriesLen()) {
 			return 3;
-		}else if(this.consecutiveRoadGames > Team.maxStand-Series.MaxSeriesLen) {
+		}else if(this.consecutiveRoadGames > Team.maxStand-Series.getMaxSeriesLen()) {
 			return 2;
 		}
 		return 0;
-	}
-	
-	public Boolean checkTotal() {
-		if (this.totalGames==162&&this.homeGames==81) {
-			return true;
-		}else {
-			return false;
-		}
 	}
 }

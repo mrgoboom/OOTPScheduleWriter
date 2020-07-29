@@ -1,18 +1,20 @@
 package scheduleBuilder;
 
 public class Series {
-	public static int MaxSeriesLen = 4;
+	private static int MaxSeriesLen=0;
 	private Team homeTeam;
 	private Team awayTeam;
 	public final int length;
+	public final int games;
 	
-	public Series(Team home, Team away, int numDays, Boolean division) {
+	public Series(Team home, Team away, int numDays, int numGames) {
 		this.length=numDays;
 		if (numDays > Series.MaxSeriesLen) {
-			return;
+			Series.MaxSeriesLen = numDays;
 		}
 		this.homeTeam=home;
 		this.awayTeam=away;
+		this.games=numGames;
 	}
 	
 	/*
@@ -21,6 +23,7 @@ public class Series {
 	public Series(Team team, int numDays) {
 		this.homeTeam=team;
 		this.length=numDays;
+		this.games=0;
 		this.awayTeam=null;
 	}
 	
@@ -39,5 +42,13 @@ public class Series {
 			return this.homeTeam;
 		}
 		return null;
+	}
+	
+	public String toString() {
+		return "Team "+this.homeTeam.id+" hosts team "+this.awayTeam.id+" for "+this.games+" games in "+this.length+" days.";
+	}
+	
+	public static int getMaxSeriesLen() {
+		return Series.MaxSeriesLen;
 	}
 }
