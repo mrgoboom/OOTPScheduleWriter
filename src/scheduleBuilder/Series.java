@@ -4,8 +4,8 @@ public class Series implements Event{
 	private static int MaxSeriesLen=0;
 	private final Team homeTeam;
 	private final Team awayTeam;
-	public final int length;
-	public final int games;
+	private final int length;
+	private final int games;
 	
 	public Series(Team home, Team away, int numDays, int numGames) {
 		this.length=numDays;
@@ -31,6 +31,14 @@ public class Series implements Event{
 		return team==this.homeTeam;
 	}
 	
+	public Team homeTeam() {
+		return this.homeTeam;
+	}
+	
+	public Team awayTeam() {
+		return this.awayTeam;
+	}
+	
 	public Boolean isAway(Team team) {
 		return team==this.awayTeam;
 	}
@@ -46,6 +54,14 @@ public class Series implements Event{
 	
 	public String toString() {
 		return "Team "+this.homeTeam.id+" hosts team "+this.awayTeam.id+" for "+this.games+" games in "+this.length+" days.";
+	}
+	
+	public int length() {
+		return this.length;
+	}
+	
+	public int games() {
+		return this.games;
 	}
 	
 	public static int getMaxSeriesLen() {

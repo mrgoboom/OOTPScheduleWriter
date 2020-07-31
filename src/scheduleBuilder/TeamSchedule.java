@@ -35,9 +35,19 @@ public class TeamSchedule {
 		}
 	}
 	
+	public void clear() {
+		this.events = new ArrayList<>();
+		this.homeSeries = new ArrayList<>();
+		this.awaySeries = new ArrayList<>();
+		this.divisionSeries = new ArrayList<>();
+		this.interdivisionSeries = new ArrayList<>();
+		this.teamSchedule = new ArrayList<>();
+		this.daysScheduled=0;
+	}
+	
 	public void addToSchedule(Series s) {
 		this.teamSchedule.add(s);
-		this.daysScheduled += s.length;
+		this.daysScheduled += s.length();
 		
 		this.events.remove(s);
 		this.homeSeries.remove(s);
@@ -56,16 +66,23 @@ public class TeamSchedule {
 		int homeGames=0;
 		int awayGames=0;
 		for(Series s: this.homeSeries) {
-			homeGames += s.games;
+			homeGames += s.games();
 		}
 		for(Series s: this.awaySeries) {
-			awayGames += s.games;
+			awayGames += s.games();
 		}
 		return homeGames-awayGames;
 	}
 
-	public List<Series> getSchedule(){
-		return this.teamSchedule;
+	public int preScheduleGameCount() {
+		int totalGames=0;
+		for (Series s:this.homeSeries) {
+			totalGames+=s.games();
+		}
+		for (Series s:this.awaySeries) {
+			totalGames+=s.games();
+		}
+		return totalGames;
 	}
 	
 	public int getDaysScheduled() {

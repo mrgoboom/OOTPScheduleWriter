@@ -8,7 +8,7 @@ public class Team {
 	public static final int maxStand = 21;
 	public static final int maxConsecutive = 14;
 	private static final List<Team> teams = new ArrayList<>();
-	private TeamSchedule schedule;
+	public final TeamSchedule schedule;
 	private int consecutiveHomeGames;
 	private int consecutiveRoadGames;
 	private int gamesWithoutBreak;
