@@ -13,13 +13,13 @@ public class Team {
 	private int consecutiveRoadGames;
 	private int gamesWithoutBreak;
 	
-	public Team (int i) {
+	public Team () {
 		this.consecutiveHomeGames=0;
 		this.consecutiveRoadGames=0;
 		this.gamesWithoutBreak=0;
-		this.id = i;
 		this.schedule = new TeamSchedule();
 		Team.teams.add(this);
+		this.id = Team.teams.size();
 	}
 	
 	public static Team findTeamWithID(int target) {
@@ -29,6 +29,17 @@ public class Team {
 			}
 		}
 		return null;
+	}
+	
+	public String areSeriesBalanced() {
+		String error = null;
+		int diff = this.schedule.preScheduleBalancedHomeAway();
+		if(diff>0) {
+			error = "Team "+this.id+" plays "+diff+" more home games than away games.";
+		}else if(diff<0) {
+			error = "Team "+this.id+" plays "+(0-diff)+" more away games than home games.";
+		}
+		return error;
 	}
 	
 	public TeamSchedule getSchedule() {

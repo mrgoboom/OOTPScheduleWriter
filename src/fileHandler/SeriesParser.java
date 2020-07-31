@@ -40,7 +40,7 @@ public class SeriesParser {
 							 output.add(serie);
 						 }
 					 }else {
-						 System.err.println("Incorrect series input at line "+i+":");
+						 System.err.println("Incorrect series input at line "+i+" one team does not exist:");
 						 System.err.println("\t"+line);
 					 }
 				 }

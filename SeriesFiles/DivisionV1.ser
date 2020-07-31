@@ -1,0 +1,113 @@
+#Division are
+#East:1,2,3,4,5
+#Central:6,7,8,9,10
+#West:11,12,13,14
+
+#This schedule has East/Central teams hosting doubleheaders against those with a number 1 or 2 greater than theirs
+
+#Home,Away,Games,Days,Repeat
+#Team 1 Division series
+1,2,3,3,2
+1,2,3,2,1
+2,1,3,3,3
+1,3,3,3,2
+1,3,3,2,1
+3,1,3,3,3
+1,4,3,3,3
+4,1,3,3,2
+4,1,3,2,1
+1,5,3,3,3
+5,1,3,3,2
+5,1,3,2,1
+#Team 2 Division series
+2,3,3,3,2
+2,3,3,2,1
+3,2,3,3,3
+2,4,3,3,2
+2,4,3,2,1
+4,2,3,3,3
+2,5,3,3,3
+5,2,3,3,2
+5,2,3,2,1
+#Team 3 Division series
+3,4,3,3,2
+3,4,3,2,1
+4,3,3,3,3
+3,5,3,3,2
+3,5,3,2,1
+5,3,3,3,3
+#Team 4 Division series
+4,5,3,3,2
+4,5,3,2,1
+5,4,3,3,3
+
+#Team 6 Division series
+6,7,3,3,2
+6,7,3,2,1
+7,6,3,3,3
+6,8,3,3,2
+6,8,3,2,1
+8,6,3,3,3
+6,9,3,3,3
+9,6,3,3,2
+9,6,3,2,1
+6,10,3,3,3
+10,6,3,3,2
+10,6,3,2,1
+#Team 7 Division series
+7,8,3,3,2
+7,8,3,2,1
+8,7,3,3,3
+7,9,3,3,2
+7,9,3,2,1
+9,7,3,3,3
+7,10,3,3,3
+10,7,3,3,2
+10,7,3,2,1
+#Team 8 Division series
+8,9,3,3,2
+8,9,3,2,1
+9,8,3,3,3
+8,10,3,3,2
+8,10,3,2,1
+10,8,3,3,3
+#Team 9 Division series
+9,10,3,3,2
+9,10,3,2,1
+10,9,3,3,3
+
+#For division 3, this schedule with have team 11 play 1 fewer game against team 12 and host 1 more game against team 13
+#Team 12 will host 1 more game against team 14
+#Team 11 Division series. Hosts DH against 12,13
+11,12,4,3,1
+11,12,3,3,2
+12,11,4,3,1
+12,11,3,2,1
+12,11,3,3,1
+11,13,4,3,1
+11,13,4,4,1
+11,13,3,3,1
+13,11,4,4,1
+13,11,3,3,2
+11,14,4,4,1
+11,14,3,3,2
+14,11,4,3,1
+14,11,4,4,1
+14,11,3,3,1
+#Team 12 Division series. Hosts DH against 14.
+12,13,4,4,1
+12,13,3,3,2
+13,12,4,3,1
+13,12,4,4,1
+13,12,3,3,1
+12,14,4,3,1
+12,14,4,4,1
+12,14,3,3,1
+14,12,4,4,1
+14,12,3,3,2
+#Team 13 Division series. Plays 2 DH against 14.
+13,14,4,3,1
+13,14,3,3,2
+14,13,4,4,1
+14,13,3,2,1
+14,13,3,3,1

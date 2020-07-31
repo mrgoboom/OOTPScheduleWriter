@@ -1,9 +1,9 @@
 package scheduleBuilder;
 
-public class Series {
+public class Series implements Event{
 	private static int MaxSeriesLen=0;
-	private Team homeTeam;
-	private Team awayTeam;
+	private final Team homeTeam;
+	private final Team awayTeam;
 	public final int length;
 	public final int games;
 	

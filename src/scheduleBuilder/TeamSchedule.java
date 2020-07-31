@@ -3,18 +3,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TeamSchedule {
-	private List<Series> series;
+	private List<Event> events;
 	private List<Series> homeSeries;
-	private List<Series> roadSeries;
+	private List<Series> awaySeries;
 	private List<Series> divisionSeries;
 	private List<Series> interdivisionSeries;
 	private List<Series> teamSchedule;
 	private int daysScheduled;
 	
 	public TeamSchedule() {
-		this.series = new ArrayList<>();
+		this.events = new ArrayList<>();
 		this.homeSeries = new ArrayList<>();
-		this.roadSeries = new ArrayList<>();
+		this.awaySeries = new ArrayList<>();
 		this.divisionSeries = new ArrayList<>();
 		this.interdivisionSeries = new ArrayList<>();
 		this.teamSchedule = new ArrayList<>();
@@ -22,11 +22,11 @@ public class TeamSchedule {
 	}
 	
 	public void addSeries(Series s, Boolean isHome, Boolean isDivision) {
-		this.series.add(s);
+		this.events.add(s);
 		if(isHome) {
 			this.homeSeries.add(s);
 		}else {
-			this.roadSeries.add(s);
+			this.awaySeries.add(s);
 		}
 		if(isDivision) {
 			this.divisionSeries.add(s);
@@ -39,13 +39,31 @@ public class TeamSchedule {
 		this.teamSchedule.add(s);
 		this.daysScheduled += s.length;
 		
-		this.series.remove(s);
+		this.events.remove(s);
 		this.homeSeries.remove(s);
-		this.roadSeries.remove(s);
+		this.awaySeries.remove(s);
 		this.interdivisionSeries.remove(s);
 		this.divisionSeries.remove(s);
 	}
 	
+	/*
+	 * Used to check if number of home and away games are equal
+	 * Returns  0 if equal
+	 * Returns >0 if more home than away
+	 * Returns <0 if more away than home
+	 */
+	public int preScheduleBalancedHomeAway() {
+		int homeGames=0;
+		int awayGames=0;
+		for(Series s: this.homeSeries) {
+			homeGames += s.games;
+		}
+		for(Series s: this.awaySeries) {
+			awayGames += s.games;
+		}
+		return homeGames-awayGames;
+	}
+
 	public List<Series> getSchedule(){
 		return this.teamSchedule;
 	}
