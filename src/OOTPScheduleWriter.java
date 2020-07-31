@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import fileHandler.SeriesParser;
+import scheduleBuilder.Builder;
 import scheduleBuilder.Series;
 import scheduleBuilder.Team;
 
@@ -30,29 +31,6 @@ public class OOTPScheduleWriter {
 			System.err.println(e);
 		}
 		return seriesList;
-	}
-	
-	private static Boolean assignSeries(List<Series> seriesList,List<List<Team>> divisions) {
-		for(Series s:seriesList) {
-			List<Team> homeDivision=null;
-			List<Team> awayDivision=null;;
-			for(List<Team> division:divisions) {
-				if(division.contains(s.homeTeam())) {
-					homeDivision=division;
-				}
-				if(division.contains(s.awayTeam())) {
-					awayDivision=division;
-				}
-			}
-			if(homeDivision!=null&&awayDivision!=null) {
-				s.homeTeam().schedule.addSeries(s, true, homeDivision==awayDivision);
-				s.awayTeam().schedule.addSeries(s, false, homeDivision==awayDivision);
-			}else {
-				System.err.println("There is a series including a team not found in any division.");
-				return false;
-			}
-		}
-		return true;
 	}
 	
 	private static List<Team> createDivision(int size){
@@ -102,24 +80,25 @@ public class OOTPScheduleWriter {
 		
 		//Create Series
 		Scanner scanner = new Scanner(System.in);
+		Builder builder = new Builder(divisions);
 		List<Series> allSeries;
 		allSeries=loadSeries(scanner);
 		if(allSeries==null) {
 			allSeries = new ArrayList<>();
 		}else {
-			if(!assignSeries(allSeries,divisions)) {
+			if(!builder.assignSeries(allSeries)) {
 				allSeries = new ArrayList<>();
 			}
 		}
 		for(;;) {
-			System.out.println("Please enter command (print/load/clear/check/help/quit): ");
+			System.out.println("Please enter command (print/load/clear/check/schedule/help/quit): ");
 			String command = scanner.nextLine();
 			if(command.equals("print")) {
 				printSeries(allSeries);
 			}else if(command.equals("load")) {
 				List<Series> newSeries;
 				if((newSeries=loadSeries(scanner))!=null) {
-					if(assignSeries(newSeries,divisions)) {
+					if(builder.assignSeries(newSeries)) {
 						allSeries.addAll(newSeries);
 					}
 				}
@@ -150,6 +129,8 @@ public class OOTPScheduleWriter {
 				if(allPass) {
 					System.out.println("All gamesets are balanced.");
 				}
+			}else if(command.equals("schedule")) {
+				builder.schedule();
 			}else if(command.equals("help")) {
 				System.out.println("print");
 				System.out.println("\tPrints out all scheduled series in a verbose but readable format.\r\n");
@@ -159,6 +140,8 @@ public class OOTPScheduleWriter {
 				System.out.println("\tClears all loaded series.\r\n");
 				System.out.println("check");
 				System.out.println("\tChecks if each team plays a balanced schedule.\r\n");
+				System.out.println("schedule");
+				System.out.println("\tAttempts to print a schedule with the loaded Series.");
 				System.out.println("quit");
 				System.out.println("\tExits the program.\r\n");
 			}else if(command.equals("quit")) {
