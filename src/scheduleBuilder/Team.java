@@ -12,14 +12,20 @@ public class Team {
 	private int consecutiveHomeGames;
 	private int consecutiveAwayGames;
 	private int gamesWithoutBreak;
+	private Team lastSeriesVS;//Use self to mark break
 	
 	public Team () {
 		this.consecutiveHomeGames=0;
 		this.consecutiveAwayGames=0;
 		this.gamesWithoutBreak=0;
+		this.lastSeriesVS=null;
 		this.schedule = new TeamSchedule(this);
 		Team.teams.add(this);
 		this.id = Team.teams.size();
+	}
+	
+	public Team getLastSeriesVS() {
+		return this.lastSeriesVS;
 	}
 	
 	public int getHomeStand() {
@@ -64,8 +70,10 @@ public class Team {
 				System.err.println("Tried to schedule event for team that is neither home nor away.");
 				return;
 			}
+			this.lastSeriesVS=s.getOpponent(this);
 		}else if(event instanceof OffDay){
 			this.gamesWithoutBreak=0;
+			this.lastSeriesVS=this;
 		}else {
 			System.err.println("Tried to schedule unknown event.");
 			return;

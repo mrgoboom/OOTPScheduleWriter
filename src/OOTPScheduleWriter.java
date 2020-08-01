@@ -6,19 +6,19 @@ import java.util.Scanner;
 
 import fileHandler.SeriesParser;
 import scheduleBuilder.Builder;
-import scheduleBuilder.Series;
+import scheduleBuilder.Event;
 import scheduleBuilder.Team;
 
 public class OOTPScheduleWriter {
 
-	private static void printSeries(List<Series> seriesList) {
-		for(Series s : seriesList) {
-			System.out.println(s.toString());
+	private static void printSeries(List<Event> seriesList) {
+		for(Event e : seriesList) {
+			System.out.println(e.toString());
 		}
 	}
 	
-	private static List<Series> loadSeries(Scanner scanner) {
-		List<Series> seriesList=null;
+	private static List<Event> loadSeries(Scanner scanner) {
+		List<Event> seriesList=null;
 		System.out.println("Enter file to load series from: ");
 		String filename = scanner.nextLine();
 		try {
@@ -81,7 +81,7 @@ public class OOTPScheduleWriter {
 		//Create Series
 		Scanner scanner = new Scanner(System.in);
 		Builder builder = new Builder(divisions);
-		List<Series> allSeries;
+		List<Event> allSeries;
 		allSeries=loadSeries(scanner);
 		if(allSeries==null) {
 			allSeries = new ArrayList<>();
@@ -96,7 +96,7 @@ public class OOTPScheduleWriter {
 			if(command.equals("print")) {
 				printSeries(allSeries);
 			}else if(command.equals("load")) {
-				List<Series> newSeries;
+				List<Event> newSeries;
 				if((newSeries=loadSeries(scanner))!=null) {
 					if(builder.assignSeries(newSeries)) {
 						allSeries.addAll(newSeries);

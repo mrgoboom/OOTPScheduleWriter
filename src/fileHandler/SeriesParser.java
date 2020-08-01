@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import scheduleBuilder.Event;
 import scheduleBuilder.Series;
 import scheduleBuilder.Team;
 
@@ -12,8 +13,8 @@ public class SeriesParser {
 	public static final int numFields=5;
 	
 	public SeriesParser() {}
-	public List<Series> parse(BufferedReader input) throws IOException{
-		 List<Series> output = new ArrayList<>();
+	public List<Event> parse(BufferedReader input) throws IOException{
+		 List<Event> output = new ArrayList<>();
 		 String line;
 		 int i=1;
 		 try{

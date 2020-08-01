@@ -24,24 +24,29 @@ public class Builder {
 		this.weekDay=DayOfWeek.THURSDAY;
 	}
 	
-	public Boolean assignSeries(List<Series> seriesList) {
-		for(Series s:seriesList) {
-			List<Team> homeDivision=null;
-			List<Team> awayDivision=null;;
-			for(List<Team> division:this.divisions) {
-				if(division.contains(s.homeTeam())) {
-					homeDivision=division;
+	public Boolean assignSeries(List<Event> eventList) {
+		for(Event e:eventList) {
+			if(e instanceof Series) {
+				Series s = (Series)e;
+				List<Team> homeDivision=null;
+				List<Team> awayDivision=null;;
+				for(List<Team> division:this.divisions) {
+					if(division.contains(s.homeTeam())) {
+						homeDivision=division;
+					}
+					if(division.contains(s.awayTeam())) {
+						awayDivision=division;
+					}
 				}
-				if(division.contains(s.awayTeam())) {
-					awayDivision=division;
+				if(homeDivision!=null&&awayDivision!=null) {
+					s.homeTeam().schedule.addSeries(s, true, homeDivision==awayDivision);
+					s.awayTeam().schedule.addSeries(s, false, homeDivision==awayDivision);
+				}else {
+					System.err.println("There is a series including a team not found in any division.");
+					return false;
 				}
-			}
-			if(homeDivision!=null&&awayDivision!=null) {
-				s.homeTeam().schedule.addSeries(s, true, homeDivision==awayDivision);
-				s.awayTeam().schedule.addSeries(s, false, homeDivision==awayDivision);
 			}else {
-				System.err.println("There is a series including a team not found in any division.");
-				return false;
+				e.homeTeam().schedule.addOffDay((OffDay)e);
 			}
 		}
 		return true;
@@ -109,8 +114,27 @@ public class Builder {
 		return false;
 	}
 	
+	private void reset() {
+		List<Event> allEvents = new ArrayList<>();
+		for(Team t:this.teams) {
+			for(Event e:t.schedule.getEvents()) {
+				if(!allEvents.contains(e)) {
+					allEvents.add(e);
+				}
+			}
+			for(Event e:t.schedule.getSchedule()) {
+				if(!allEvents.contains(e)) {
+					allEvents.add(e);
+				}
+			}
+			t.schedule.clear();
+		}
+		//TODO: Re-add everything as new
+		
+	}
+	
 	private Boolean scheduleDivision(Team team) {
-		if(weekDay.isRestDay()) {
+		if(weekDay.isRestDay()&&team.getLastSeriesVS()!=team) {
 			int teamsScheduled=0;
 			for(Team t:this.teams) {
 				if(t.schedule.getDaysScheduled()>team.schedule.getDaysScheduled()) {
@@ -129,11 +153,13 @@ public class Builder {
 		List<Team> validOpponents=new ArrayList<>();
 		for(Team t : division) {
 			if(t.schedule.getDaysScheduled()==team.schedule.getDaysScheduled()) {
-				validOpponents.add(t);
+				if(t!=team&&t!=team.getLastSeriesVS()&&t.scheduleAlert()!=1) {
+					validOpponents.add(t);
+				}
 			}
 		}
 		Series series=null;
-		if(validOpponents.size()>=2) {
+		if(validOpponents.size()>0) {
 			series=team.schedule.grabDivisionSeriesVS(validOpponents);
 		}
 		if(series!=null) {
@@ -158,7 +184,7 @@ public class Builder {
 	}
 	
 	private Boolean scheduleHome(Team team, int lengthReq) {
-		if(weekDay.isRestDay()&&lengthReq==0) {
+		if(weekDay.isRestDay()&&lengthReq==0&&team.getLastSeriesVS()!=team) {
 			int teamsScheduled=0;
 			for(Team t:this.teams) {
 				if(t.schedule.getDaysScheduled()>team.schedule.getDaysScheduled()) {
@@ -175,7 +201,7 @@ public class Builder {
 		}
 		List<Team> validOpponents = new ArrayList<>();
 		for(Team t:this.teams) {
-			if(t.schedule.getDaysScheduled()==team.schedule.getDaysScheduled()) {
+			if((t.schedule.getDaysScheduled()==team.schedule.getDaysScheduled())&&team.getLastSeriesVS()!=t&&t.scheduleAlert()!=1) {
 				if(t.getAwayStand()<Team.maxConsecutive-Series.getMaxSeriesLen()&&(t.getHomeStand()==0||t.getHomeStand()>4)) {
 					validOpponents.add(t);
 				}
@@ -194,7 +220,7 @@ public class Builder {
 	}
 	
 	private Boolean scheduleRoad(Team team, int lengthReq) {
-		if(weekDay.isRestDay()&&lengthReq==0) {
+		if(weekDay.isRestDay()&&lengthReq==0&&team.getLastSeriesVS()!=team) {
 			int teamsScheduled=0;
 			for(Team t:this.teams) {
 				if(t.schedule.getDaysScheduled()>team.schedule.getDaysScheduled()) {
@@ -211,7 +237,7 @@ public class Builder {
 		}
 		List<Team> validOpponents = new ArrayList<>();
 		for(Team t:this.teams) {
-			if(t.schedule.getDaysScheduled()==team.schedule.getDaysScheduled()) {
+			if(t.schedule.getDaysScheduled()==team.schedule.getDaysScheduled()&&team.getLastSeriesVS()!=t&&t.scheduleAlert()!=1) {
 				if(t.getHomeStand()<Team.maxConsecutive-Series.getMaxSeriesLen()&&(t.getAwayStand()==0||t.getAwayStand()>4)) {
 					validOpponents.add(t);
 				}
@@ -229,14 +255,14 @@ public class Builder {
 	}
 	
 	private Boolean scheduleInterdivision(Team team) {
-		if(weekDay.isRestDay()) {
+		if(weekDay.isRestDay()&&team.getLastSeriesVS()!=team) {
 			int teamsScheduled=0;
 			for(Team t:this.teams) {
 				if(t.schedule.getDaysScheduled()>team.schedule.getDaysScheduled()) {
 					teamsScheduled++;
 				}
 			}
-			if(teamsScheduled>3) {
+			if(teamsScheduled>1) {
 				Event takeBreak = team.schedule.grabValidEvent(0);
 				if(takeBreak instanceof OffDay) {
 					pushToSchedule(takeBreak);
@@ -248,7 +274,9 @@ public class Builder {
 		List<Team> validOpponents=new ArrayList<>();
 		for(Team t : this.teams) {
 			if(!division.contains(t)&&t.schedule.getDaysScheduled()==team.schedule.getDaysScheduled()) {
-				validOpponents.add(t);
+				if(team.getLastSeriesVS()!=t&&t.scheduleAlert()!=1) {
+					validOpponents.add(t);
+				}
 			}
 		}
 		if(validOpponents.size()>0) {
@@ -285,22 +313,22 @@ public class Builder {
 				int alert = active.scheduleAlert();
 				switch(alert) {
 					case 1:
-						success=scheduleBreak(active);
+						success&=scheduleBreak(active);
 						break;
 					case 2:
-						success=scheduleHome(active,0);
+						success&=scheduleHome(active,0);
 						break;
 					case 3:
-						success=scheduleRoad(active,0);
+						success&=scheduleRoad(active,0);
 						break;
 					default:
-						success=scheduleDivision(active);
+						success&=scheduleDivision(active);
 						break;
 				}
 			}
 		}
-		//Until 4 days before all-star break
-		while(scheduleDay<this.allStarBreakStart-Series.getMaxSeriesLen()) {
+		//Until 5 days before all-star break
+		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
 			Team active = teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
@@ -309,18 +337,50 @@ public class Builder {
 				int alert = active.scheduleAlert();
 				switch(alert) {
 					case 1:
-						success=scheduleBreak(active);
+						success&=scheduleBreak(active);
 						break;
 					case 2:
-						success=scheduleHome(active,0);
+						success&=scheduleHome(active,0);
 						break;
 					case 3:
-						success=scheduleRoad(active,0);
+						success&=scheduleRoad(active,0);
 						break;
 					default:
-						success=scheduleInterdivision(active);
+						success&=scheduleInterdivision(active);
 						break;
 				}
+			}
+		}
+		//5 days before all-star break use this to avoid offday final day
+		for(;;) {
+			Team active = teams.get(0);
+			if(active.schedule.getDaysScheduled()>scheduleDay) {
+				scheduleDay++;
+				weekDay=weekDay.next();
+				break;
+			}
+			int alert = active.scheduleAlert();
+			switch(alert) {
+				case 1:
+					success&=scheduleBreak(active);
+					break;
+				case 2:
+					if(!scheduleHome(active,2)) {
+						success&=scheduleHome(active,3);
+					}
+					break;
+				case 3:
+					if(!scheduleHome(active,2)) {
+						success&=scheduleHome(active,3);
+					}
+					break;
+				default:
+					if(!scheduleAnySeries(active,2)) {
+						if(!scheduleAnySeries(active,3)) {
+							success&=scheduleBreak(active);
+						}
+					}
+					break;
 			}
 		}
 		//4 days before all-star break
@@ -334,18 +394,83 @@ public class Builder {
 			int alert = active.scheduleAlert();
 			switch(alert) {
 				case 1:
-					success=scheduleBreak(active);
+					success&=scheduleBreak(active);
 					break;
 				case 2:
-					success=scheduleHome(active,4);
+					success&=scheduleHome(active,4);
 					break;
 				case 3:
-					success=scheduleRoad(active,4);
+					success&=scheduleRoad(active,4);
 					break;
 				default:
-					success=scheduleAnything(active,4);
+					if(!scheduleAnySeries(active,4)) {
+						success&=scheduleAnything(active,4);
+					}
 					break;
 			}
+		}
+		//3 days before all-star break
+		for(;;) {
+			Team active = teams.get(0);
+			if(active.schedule.getDaysScheduled()>scheduleDay) {
+				scheduleDay++;
+				weekDay=weekDay.next();
+				break;
+			}
+			int alert = active.scheduleAlert();
+			switch(alert) {
+				case 1:
+					success&=scheduleBreak(active);
+					break;
+				case 2:
+					success&=scheduleHome(active,3);
+					break;
+				case 3:
+					success&=scheduleRoad(active,3);
+					break;
+				default:
+					if(!scheduleAnySeries(active,3)) {
+						success&=scheduleAnything(active,3);
+					}
+					break;
+			}
+		}
+		//2 days before all-star break
+		for(;;) {
+			Team active = teams.get(0);
+			if(active.schedule.getDaysScheduled()>scheduleDay) {
+				scheduleDay++;
+				weekDay=weekDay.next();
+				break;
+			}
+			int alert = active.scheduleAlert();
+			switch(alert) {
+				case 2:
+					success&=scheduleHome(active,2);
+					break;
+				case 3:
+					success&=scheduleRoad(active,2);
+					break;
+				default:
+					if(!scheduleAnySeries(active,2)) {
+						success&=scheduleAnything(active,2);
+					}
+					break;
+			}
+			if(!success) {
+				reset();
+				return false;
+			}
+		}
+		//day before all-star break (not ideal if any teams actually need scheduling here)
+		for(;;) {
+			Team active = teams.get(0);
+			if(active.schedule.getDaysScheduled()>scheduleDay) {
+				scheduleDay++;
+				weekDay=weekDay.next();
+				break;
+			}
+			success&=scheduleBreak(active);
 		}
 		return success;
 	}

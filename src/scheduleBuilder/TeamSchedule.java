@@ -24,6 +24,14 @@ public class TeamSchedule {
 		this.daysScheduled=0;
 	}
 	
+	public List<Event> getEvents(){
+		return this.events;
+	}
+	
+	public List<Event> getSchedule(){
+		return this.teamSchedule;
+	}
+	
 	public void addSeries(Series s, Boolean isHome, Boolean isDivision) {
 		this.events.add(s);
 		if(isHome) {
@@ -71,6 +79,7 @@ public class TeamSchedule {
 	}
 	
 	public Event grabValidEvent(int lengthReq) {
+		Event ratherNot=null;
 		for(int i=0;i<events.size();i++) {
 			Event test = events.get(i);
 			if(test instanceof OffDay) {
@@ -79,14 +88,22 @@ public class TeamSchedule {
 				}
 			}else if(test instanceof Series){
 				Series s = (Series)test;
-				if(s.getOpponent(this.team).schedule.getDaysScheduled()==this.daysScheduled) {
+				Team opponent = s.getOpponent(this.team);
+				if(opponent.schedule.getDaysScheduled()==this.daysScheduled) {
 					if(lengthReq==0||s.length()==lengthReq) {
-						return s;
+						if(opponent.scheduleAlert()!=1) {
+							return s;
+						}else {
+							ratherNot=s;
+						}
 					}
 				}
 			}else {
 				System.err.println("Found Unknown Event.");
 			}
+		}
+		if(ratherNot!=null) {
+			return ratherNot;
 		}
 		System.err.println("No valid events.");
 		return null;
@@ -97,7 +114,8 @@ public class TeamSchedule {
 			Event test = events.get(i);
 			if(test instanceof Series) {
 				Series s = (Series)test;
-				if(s.getOpponent(this.team).schedule.getDaysScheduled()==this.daysScheduled) {
+				Team opponent = s.getOpponent(this.team);
+				if(opponent.schedule.getDaysScheduled()==this.daysScheduled&&this.team.getLastSeriesVS()!=opponent&&opponent.scheduleAlert()!=1) {
 					if(lengthReq==0||s.length()==lengthReq) {
 						return s;
 					}
