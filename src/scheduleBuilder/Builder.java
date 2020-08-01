@@ -46,7 +46,9 @@ public class Builder {
 					return false;
 				}
 			}else {
-				e.homeTeam().schedule.addOffDay((OffDay)e);
+				if(e.length()==1) {
+					e.homeTeam().schedule.addOffDay((OffDay)e);
+				}
 			}
 		}
 		return true;
@@ -308,7 +310,7 @@ public class Builder {
 		int scheduleDay=0;
 		//First month of season
 		while(scheduleDay<30) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();
@@ -336,7 +338,7 @@ public class Builder {
 		}
 		//Until 5 days before all-star break
 		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();
@@ -364,7 +366,7 @@ public class Builder {
 		}
 		//5 days before all-star break use this to avoid offday final day
 		for(;;) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();
@@ -400,7 +402,7 @@ public class Builder {
 		}
 		//4 days before all-star break
 		for(;;) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();
@@ -430,7 +432,7 @@ public class Builder {
 		}
 		//3 days before all-star break
 		for(;;) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();
@@ -460,7 +462,7 @@ public class Builder {
 		}
 		//2 days before all-star break
 		for(;;) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();
@@ -487,7 +489,7 @@ public class Builder {
 		}
 		//day before all-star break (not ideal if any teams actually need scheduling here)
 		for(;;) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();
@@ -500,10 +502,18 @@ public class Builder {
 			}
 		}
 		
+		
 		System.out.println("All star break reached.");
+		for(Team active:this.teams) {
+			OffDay allStarBreak = new OffDay(active,3);
+			active.schedule.addToSchedule(allStarBreak);
+		}
+		scheduleDay+=3;
+		weekDay=weekDay.advanceDays(3);
+		
 		//Last 30 days
 		while(scheduleDay<totalDays-30) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();
@@ -532,7 +542,7 @@ public class Builder {
 		System.out.println("Made it to September");
 		//To end of season
 		while(scheduleDay<totalDays) {
-			Team active = teams.get(0);
+			Team active = this.teams.get(0);
 			if(active.schedule.getDaysScheduled()>scheduleDay) {
 				scheduleDay++;
 				weekDay=weekDay.next();

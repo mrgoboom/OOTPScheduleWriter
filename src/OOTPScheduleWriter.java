@@ -130,7 +130,7 @@ public class OOTPScheduleWriter {
 					System.out.println("All gamesets are balanced.");
 				}
 			}else if(command.equals("schedule")) {
-				int maxRetries=1025;
+				int maxRetries=1000000;
 				int printRetries=1;
 				int retries=0;
 				Boolean success=false;

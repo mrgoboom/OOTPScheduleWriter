@@ -83,7 +83,7 @@ public class TeamSchedule {
 		for(int i=0;i<events.size();i++) {
 			Event test = events.get(i);
 			if(test instanceof OffDay) {
-				if(lengthReq==0||lengthReq==4) {
+				if((lengthReq==0||lengthReq==4)&&this.team.getLastSeriesVS()!=this.team) {
 					return test;
 				}
 			}else if(test instanceof Series){
