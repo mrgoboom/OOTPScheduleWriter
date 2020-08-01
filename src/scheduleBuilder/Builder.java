@@ -501,6 +501,64 @@ public class Builder {
 		}
 		
 		System.out.println("All star break reached.");
+		//Last 30 days
+		while(scheduleDay<totalDays-30) {
+			Team active = teams.get(0);
+			if(active.schedule.getDaysScheduled()>scheduleDay) {
+				scheduleDay++;
+				weekDay=weekDay.next();
+			}else {
+				int alert = active.scheduleAlert();
+				switch(alert) {
+					case 1:
+						success&=scheduleBreak(active);
+						break;
+					case 2:
+						success&=scheduleHome(active,0);
+						break;
+					case 3:
+						success&=scheduleRoad(active,0);
+						break;
+					default:
+						success&=scheduleInterdivision(active);
+						break;
+				}
+			}
+			if(!success) {
+				reset();
+				return false;
+			}
+		}
+		System.out.println("Made it to September");
+		//To end of season
+		while(scheduleDay<totalDays) {
+			Team active = teams.get(0);
+			if(active.schedule.getDaysScheduled()>scheduleDay) {
+				scheduleDay++;
+				weekDay=weekDay.next();
+			}else {
+				int alert = active.scheduleAlert();
+				switch(alert) {
+					case 1:
+						success&=scheduleBreak(active);
+						break;
+					case 2:
+						success&=scheduleHome(active,0);
+						break;
+					case 3:
+						success&=scheduleRoad(active,0);
+						break;
+					default:
+						success&=scheduleDivision(active);
+						break;
+				}
+			}
+			if(!success) {
+				reset();
+				return false;
+			}
+		}
+		System.out.println("Schedule completed successfully.");
 		return success;
 	}
 }
