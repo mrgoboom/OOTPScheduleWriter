@@ -67,7 +67,7 @@ public class TeamSchedule {
 		Collections.shuffle(divisionSeries);
 		Collections.shuffle(interdivisionSeries);
 	}
-	
+	/*
 	public OffDay grabBreak() {
 		for(int i=0;i<events.size();i++) {
 			Event test=events.get(i);
@@ -167,6 +167,22 @@ public class TeamSchedule {
 			}
 		}
 		return null;
+	}
+	*/
+
+	public int remainingMatchups(Team opponent) {
+		int matchups=0;
+		for(Series s:this.homeSeries) {
+			if(s.getOpponent(this.team)==opponent) {
+				matchups++;
+			}
+		}
+		for(Series s:this.awaySeries) {
+			if(s.getOpponent(this.team)==opponent) {
+				matchups++;
+			}
+		}
+		return matchups;
 	}
 	
 	public void addToSchedule(Event e) {

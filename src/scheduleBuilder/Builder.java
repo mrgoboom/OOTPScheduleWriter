@@ -96,24 +96,6 @@ public class Builder {
 		}
 	}
 	
-	private Boolean scheduleAnything(Team team,int lengthReq) {
-		Event event=team.schedule.grabValidEvent(lengthReq);
-		if(event!=null) {
-			pushToSchedule(event);
-			return true;
-		}
-		return false;
-	}
-	
-	private Boolean scheduleAnySeries(Team team, int lengthReq) {
-		Series series=team.schedule.grabValidSeries(lengthReq);
-		if(series!=null) {
-			pushToSchedule(series);
-			return true;
-		}
-		return false;
-	}
-	
 	private void reset() {
 		List<Event> allEvents = new ArrayList<>();
 		for(Team t:this.teams) {
@@ -134,6 +116,24 @@ public class Builder {
 		if(!assignSeries(allEvents)) {
 			System.err.println("Reset failed. Please terminate.");
 		}
+	}
+	/*
+	private Boolean scheduleAnything(Team team,int lengthReq) {
+		Event event=team.schedule.grabValidEvent(lengthReq);
+		if(event!=null) {
+			pushToSchedule(event);
+			return true;
+		}
+		return false;
+	}
+	
+	private Boolean scheduleAnySeries(Team team, int lengthReq) {
+		Series series=team.schedule.grabValidSeries(lengthReq);
+		if(series!=null) {
+			pushToSchedule(series);
+			return true;
+		}
+		return false;
 	}
 	
 	private Boolean scheduleDivision(Team team) {
@@ -294,6 +294,37 @@ public class Builder {
 		}
 		return true;
 	}
+	*/
+	private List<Team> getWaiting(int dayOfSchedule){
+		List<Team> waiting = new ArrayList<>();
+		for(Team t:teams) {
+			if(t.schedule.getDaysScheduled()==dayOfSchedule) {
+				waiting.add(t);
+			}
+		}
+		return waiting;
+	}
+	
+	private Boolean negotiate(List<Team> toSchedule) {
+		//get # of remaining series between teams.
+		int size = toSchedule.size();
+		int[][] remainingMatchups = new int[size][size];//access @ i<j
+		int[] totalMatchups = new int[size];
+		int minIndex=0;
+		for(int i=0;i<size;i++) {
+			for(int j=i+1;j<size;j++) {
+				int iVjMatchups=toSchedule.get(i).schedule.remainingMatchups(toSchedule.get(j));
+				remainingMatchups[i][j]=iVjMatchups;
+				totalMatchups[i]++;
+				totalMatchups[j]++;
+			}
+			if(totalMatchups[i]<totalMatchups[minIndex]) {
+				minIndex=i;
+			}
+		}
+		//TODO: Schedule a series for team toSchedule.get(i). Recurr with list minus teams in-game.
+		return false;
+	}
 	
 	public Boolean schedule() {
 		Boolean success=true;
@@ -308,256 +339,29 @@ public class Builder {
 		int scheduleDay=0;
 		//First month of season
 		while(scheduleDay<30) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-			}else {
-				int alert = active.scheduleAlert();
-				switch(alert) {
-					case 1:
-						success&=scheduleBreak(active);
-						break;
-					case 2:
-						success&=scheduleHome(active,0);
-						break;
-					case 3:
-						success&=scheduleRoad(active,0);
-						break;
-					default:
-						success&=scheduleDivision(active);
-						break;
-				}
-			}
-			if(!success) {
-				reset();
-				return false;
-			}
+			List<Team> toSchedule=getWaiting(scheduleDay);
+			System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
+			success&=negotiate(toSchedule);
 		}
 		//Until 5 days before all-star break
-		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-			}else {
-				int alert = active.scheduleAlert();
-				switch(alert) {
-					case 1:
-						success&=scheduleBreak(active);
-						break;
-					case 2:
-						success&=scheduleHome(active,0);
-						break;
-					case 3:
-						success&=scheduleRoad(active,0);
-						break;
-					default:
-						success&=scheduleInterdivision(active);
-						break;
-				}
-			}
-			if(!success) {
-				reset();
-				return false;
-			}
-		}
+		
 		//5 days before all-star break use this to avoid offday final day
-		for(;;) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-				break;
-			}
-			int alert = active.scheduleAlert();
-			switch(alert) {
-				case 1:
-					success&=scheduleBreak(active);
-					break;
-				case 2:
-					if(!scheduleHome(active,2)) {
-						success&=scheduleHome(active,3);
-					}
-					break;
-				case 3:
-					if(!scheduleHome(active,2)) {
-						success&=scheduleHome(active,3);
-					}
-					break;
-				default:
-					if(!scheduleAnySeries(active,2)) {
-						if(!scheduleAnySeries(active,3)) {
-							success&=scheduleBreak(active);
-						}
-					}
-					break;
-			}
-			if(!success) {
-				reset();
-				return false;
-			}
-		}
+		
 		//4 days before all-star break
-		for(;;) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-				break;
-			}
-			int alert = active.scheduleAlert();
-			switch(alert) {
-				case 1:
-					success&=scheduleBreak(active);
-					break;
-				case 2:
-					success&=scheduleHome(active,4);
-					break;
-				case 3:
-					success&=scheduleRoad(active,4);
-					break;
-				default:
-					if(!scheduleAnySeries(active,4)) {
-						success&=scheduleAnything(active,4);
-					}
-					break;
-			}
-			if(!success) {
-				reset();
-				return false;
-			}
-		}
+		
 		//3 days before all-star break
-		for(;;) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-				break;
-			}
-			int alert = active.scheduleAlert();
-			switch(alert) {
-				case 1:
-					success&=scheduleBreak(active);
-					break;
-				case 2:
-					success&=scheduleHome(active,3);
-					break;
-				case 3:
-					success&=scheduleRoad(active,3);
-					break;
-				default:
-					if(!scheduleAnySeries(active,3)) {
-						success&=scheduleAnything(active,3);
-					}
-					break;
-			}
-			if(!success) {
-				reset();
-				return false;
-			}
-		}
+		
 		//2 days before all-star break
-		for(;;) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-				break;
-			}
-			int alert = active.scheduleAlert();
-			switch(alert) {
-				case 2:
-					success&=scheduleHome(active,2);
-					break;
-				case 3:
-					success&=scheduleRoad(active,2);
-					break;
-				default:
-					if(!scheduleAnySeries(active,2)) {
-						success&=scheduleAnything(active,2);
-					}
-					break;
-			}
-			if(!success) {
-				reset();
-				return false;
-			}
-		}
+		
 		//day before all-star break (not ideal if any teams actually need scheduling here)
-		for(;;) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-				break;
-			}
-			success&=scheduleBreak(active);
-			if(!success) {
-				reset();
-				return false;
-			}
-		}
+
 		
 		System.out.println("All star break reached.");
 		//Last 30 days
-		while(scheduleDay<totalDays-30) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-			}else {
-				int alert = active.scheduleAlert();
-				switch(alert) {
-					case 1:
-						success&=scheduleBreak(active);
-						break;
-					case 2:
-						success&=scheduleHome(active,0);
-						break;
-					case 3:
-						success&=scheduleRoad(active,0);
-						break;
-					default:
-						success&=scheduleInterdivision(active);
-						break;
-				}
-			}
-			if(!success) {
-				reset();
-				return false;
-			}
-		}
+		
 		System.out.println("Made it to September");
 		//To end of season
-		while(scheduleDay<totalDays) {
-			Team active = teams.get(0);
-			if(active.schedule.getDaysScheduled()>scheduleDay) {
-				scheduleDay++;
-				weekDay=weekDay.next();
-			}else {
-				int alert = active.scheduleAlert();
-				switch(alert) {
-					case 1:
-						success&=scheduleBreak(active);
-						break;
-					case 2:
-						success&=scheduleHome(active,0);
-						break;
-					case 3:
-						success&=scheduleRoad(active,0);
-						break;
-					default:
-						success&=scheduleDivision(active);
-						break;
-				}
-			}
-			if(!success) {
-				reset();
-				return false;
-			}
-		}
+		
 		System.out.println("Schedule completed successfully.");
 		return success;
 	}
