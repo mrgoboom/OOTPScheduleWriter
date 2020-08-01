@@ -342,6 +342,10 @@ public class Builder {
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
 			success&=negotiate(toSchedule);
+			if(!success) {
+				reset();
+				return false;
+			}
 		}
 		//Until 5 days before all-star break
 		
