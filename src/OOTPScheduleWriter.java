@@ -130,7 +130,25 @@ public class OOTPScheduleWriter {
 					System.out.println("All gamesets are balanced.");
 				}
 			}else if(command.equals("schedule")) {
-				builder.schedule();
+				int maxRetries=1025;
+				int printRetries=1;
+				int retries=0;
+				Boolean success=false;
+				while(!(success=builder.schedule())) {
+					retries++;
+					if(retries>=maxRetries) {
+						break;
+					}
+					if(retries>=printRetries) {
+						System.out.println("Schedule build failed (Count: "+retries+"). Retrying...");
+						printRetries*=2;
+					}
+				}
+				if(success) {
+					System.out.println("Schedule built successfully ("+retries+" attempts).");
+				}else {
+					System.err.println("Schedule build failed. Reached maximum attempts.");
+				}
 			}else if(command.equals("help")) {
 				System.out.println("print");
 				System.out.println("\tPrints out all scheduled series in a verbose but readable format.\r\n");

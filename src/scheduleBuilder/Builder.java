@@ -127,10 +127,13 @@ public class Builder {
 					allEvents.add(e);
 				}
 			}
-			t.schedule.clear();
+			t.reset();
 		}
+		this.weekDay=DayOfWeek.THURSDAY;
 		//TODO: Re-add everything as new
-		
+		if(!assignSeries(allEvents)) {
+			System.err.println("Reset failed. Please terminate.");
+		}
 	}
 	
 	private Boolean scheduleDivision(Team team) {
@@ -326,6 +329,10 @@ public class Builder {
 						break;
 				}
 			}
+			if(!success) {
+				reset();
+				return false;
+			}
 		}
 		//Until 5 days before all-star break
 		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
@@ -349,6 +356,10 @@ public class Builder {
 						success&=scheduleInterdivision(active);
 						break;
 				}
+			}
+			if(!success) {
+				reset();
+				return false;
 			}
 		}
 		//5 days before all-star break use this to avoid offday final day
@@ -382,6 +393,10 @@ public class Builder {
 					}
 					break;
 			}
+			if(!success) {
+				reset();
+				return false;
+			}
 		}
 		//4 days before all-star break
 		for(;;) {
@@ -408,6 +423,10 @@ public class Builder {
 					}
 					break;
 			}
+			if(!success) {
+				reset();
+				return false;
+			}
 		}
 		//3 days before all-star break
 		for(;;) {
@@ -433,6 +452,10 @@ public class Builder {
 						success&=scheduleAnything(active,3);
 					}
 					break;
+			}
+			if(!success) {
+				reset();
+				return false;
 			}
 		}
 		//2 days before all-star break
@@ -471,7 +494,13 @@ public class Builder {
 				break;
 			}
 			success&=scheduleBreak(active);
+			if(!success) {
+				reset();
+				return false;
+			}
 		}
+		
+		System.out.println("All star break reached.");
 		return success;
 	}
 }

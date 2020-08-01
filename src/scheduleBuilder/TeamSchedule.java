@@ -202,11 +202,8 @@ public class TeamSchedule {
 	
 	public int preScheduleGameDays() {
 		int gameDays=0;
-		for(Series s: this.homeSeries) {
-			gameDays += s.length();
-		}
-		for(Series s: this.awaySeries) {
-			gameDays += s.length();
+		for(Event e: this.events) {
+			gameDays+=e.length();
 		}
 		return gameDays;
 	}

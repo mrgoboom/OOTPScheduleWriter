@@ -45,6 +45,14 @@ public class Team {
 		return null;
 	}
 	
+	public void reset() {
+		this.consecutiveHomeGames=0;
+		this.consecutiveAwayGames=0;
+		this.gamesWithoutBreak=0;
+		this.lastSeriesVS=null;
+		this.schedule.clear();
+	}
+	
 	public String areSeriesBalanced() {
 		String error = null;
 		int diff = this.schedule.preScheduleBalancedHomeAway();
