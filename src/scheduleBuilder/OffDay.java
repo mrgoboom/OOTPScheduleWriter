@@ -18,6 +18,10 @@ public class OffDay implements Event {
 	}
 	
 	public Team homeTeam() {
-		return team;
+		return this.team;
+	}
+	
+	public Boolean isInvolved(Team t) {
+		return t==this.team;
 	}
 }

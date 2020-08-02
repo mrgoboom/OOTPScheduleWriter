@@ -12,6 +12,7 @@ public class Team {
 	private int consecutiveHomeGames;
 	private int consecutiveAwayGames;
 	private int gamesWithoutBreak;
+	public int restDays;
 	private Team lastSeriesVS;//Use self to mark break
 	
 	public Team () {
@@ -22,6 +23,7 @@ public class Team {
 		this.schedule = new TeamSchedule(this);
 		Team.teams.add(this);
 		this.id = Team.teams.size();
+		this.restDays=22;
 	}
 	
 	public Team getLastSeriesVS() {
@@ -51,6 +53,7 @@ public class Team {
 		this.gamesWithoutBreak=0;
 		this.lastSeriesVS=null;
 		this.schedule.clear();
+		this.restDays=22;
 	}
 	
 	public String areSeriesBalanced() {
@@ -81,6 +84,7 @@ public class Team {
 			this.lastSeriesVS=s.getOpponent(this);
 		}else if(event instanceof OffDay){
 			this.gamesWithoutBreak=0;
+			this.restDays--;
 			this.lastSeriesVS=this;
 		}else {
 			System.err.println("Tried to schedule unknown event.");
@@ -92,7 +96,7 @@ public class Team {
 	/*
 	 * Returns 1 if need Break
 	 * Returns 2 if need HomeSeries
-	 * Returns 3 if need RoadSeries
+	 * Returns 3 if need AwaySeries
 	 * Else returns 0
 	 */
 	public int scheduleAlert() {

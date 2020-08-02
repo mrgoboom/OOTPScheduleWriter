@@ -170,19 +170,18 @@ public class TeamSchedule {
 	}
 	*/
 
-	public int remainingMatchups(Team opponent) {
-		int matchups=0;
-		for(Series s:this.homeSeries) {
-			if(s.getOpponent(this.team)==opponent) {
-				matchups++;
+	public List<Event> remainingMatchups(List<Team> opponents) {
+		List<Event> fitMatchup = new ArrayList<>();
+		for(Event e:this.events) {
+			if(e instanceof Series) {
+				if(opponents.contains(((Series)e).getOpponent(this.team))) {
+					fitMatchup.add(e);
+				}
+			}else {
+				fitMatchup.add(e);
 			}
 		}
-		for(Series s:this.awaySeries) {
-			if(s.getOpponent(this.team)==opponent) {
-				matchups++;
-			}
-		}
-		return matchups;
+		return fitMatchup;
 	}
 	
 	public void addToSchedule(Event e) {

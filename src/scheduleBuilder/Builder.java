@@ -1,5 +1,6 @@
 package scheduleBuilder;
 
+import java.time.temporal.ValueRange;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -305,25 +306,179 @@ public class Builder {
 		return waiting;
 	}
 	
-	private Boolean negotiate(List<Team> toSchedule) {
-		//get # of remaining series between teams.
-		int size = toSchedule.size();
-		int[][] remainingMatchups = new int[size][size];//access @ i<j
-		int[] totalMatchups = new int[size];
-		int minIndex=0;
-		for(int i=0;i<size;i++) {
-			for(int j=i+1;j<size;j++) {
-				int iVjMatchups=toSchedule.get(i).schedule.remainingMatchups(toSchedule.get(j));
-				remainingMatchups[i][j]=iVjMatchups;
-				totalMatchups[i]++;
-				totalMatchups[j]++;
+	private List<Event> filterPriority(List<Event> input, Priority priority){
+		List<Event> output = new ArrayList<>();
+		if(priority==Priority.LENGTH||priority==Priority.LENGTH_FORCE) {
+			ValueRange desiredLength;
+			switch(this.weekDay) {
+			case MONDAY:
+			case FRIDAY:
+				desiredLength=ValueRange.of(3, 4);
+				break;
+			case TUESDAY:
+			case SATURDAY:
+				desiredLength=ValueRange.of(2, 3);
+				break;
+			case WEDNESDAY:
+			case SUNDAY:
+				desiredLength=ValueRange.of(2, 2);
+				break;
+			default:
+				desiredLength=ValueRange.of(4, 4);
 			}
-			if(totalMatchups[i]<totalMatchups[minIndex]) {
-				minIndex=i;
+			for(Event e:input) {
+				if(priority.matchesPriority(e, findDivision(e.homeTeam()), e.homeTeam(), desiredLength)) {
+					output.add(e);
+				}
+			}
+		}else {
+			for(Event e:input) {
+				if(priority.matchesPriority(e, findDivision(e.homeTeam()), e.homeTeam(), null)) {
+					output.add(e);
+				}
 			}
 		}
-		//TODO: Schedule a series for team toSchedule.get(i). Recurr with list minus teams in-game.
-		return false;
+		return output;
+	}
+	
+	private List<Team> missingEvent(List<Team> teamList, List<Event> available) {
+		List<Team> missing = new ArrayList<>();
+		for(Team team:teamList) {
+			boolean success=false;
+			for(Event event:available) {
+				if(event.isInvolved(team)) {
+					success=true;
+					break;
+				}
+			}
+			if(!success) {
+				missing.add(team);
+			}
+		}
+		return missing;
+	}
+	
+	private Event restDay(Team team, List<Event> toSearch) {
+		for(Event event:toSearch) {
+			if(event.homeTeam()==team&&event instanceof OffDay) {
+				return event;
+			}
+		}
+		return null;
+	}
+	
+	private List<TeamPair> createPairs(List<Event> available, Team dontRest){
+		TeamPair.clearPairs();
+		List<TeamPair> allPairs = new ArrayList<>();
+		for(Event e:available) {
+			if((e instanceof OffDay)&&e.homeTeam()!=dontRest) {
+				TeamPair newPair=TeamPair.createNew(e.homeTeam(), e.homeTeam());
+				if(!allPairs.contains(newPair)) {
+					allPairs.add(newPair);
+				}
+			}else {
+				TeamPair newPair=TeamPair.createNew(e.homeTeam(), ((Series)e).awayTeam());
+				if(!allPairs.contains(newPair)) {
+					allPairs.add(newPair);
+				}
+			}
+		}
+		return allPairs;
+	}
+	
+	private List<Event> selectEvents(List<Team> toSchedule, List<Event> available) {
+		List<Event> events = new ArrayList<>();
+		/*List<Team> scheduling=toSchedule;
+		if(this.weekDay.isRestDay()&&(this.teams.size()-scheduling.size()>3)) {
+			List<Team> canRest = new ArrayList<>();
+			List<Team> cantRest = new ArrayList<>();
+			
+			for(Team t:scheduling) {
+				Event rest = restDay(t, available);
+				if(rest==null) {
+					cantRest.add(t);
+				}else {
+					canRest.add(t);
+					events.add(rest);
+				}
+			}
+			if(cantRest.size()%2==1) {
+				if(canRest.size()>0) {
+					Team leastRest=canRest.get(0);
+					for(Team team:canRest) {
+						if(team.restDays<leastRest.restDays) {
+							leastRest=team;
+						}
+					}
+					final Team toSwitch=leastRest;
+					canRest.remove(toSwitch);
+					cantRest.add(toSwitch);
+					events.removeIf(e->(e.isInvolved(toSwitch)));
+				}else {
+					return null;
+				}
+				scheduling=cantRest;
+			}
+		}*/
+		Team dontRest=null;
+		if(this.weekDay.isRestDay()&&(this.teams.size()==toSchedule.size())) {
+			dontRest=toSchedule.get(0);
+			int fewestRemaining=Integer.MAX_VALUE;
+			for(Team t:toSchedule) {
+				if(t.restDays<fewestRemaining) {
+					fewestRemaining=t.restDays;
+					dontRest=t;
+				}
+			}
+		}
+		List<TeamPair> allPairs=createPairs(available,dontRest);
+		List<TeamPair> matchups=TeamPair.getUniqueMatchups(allPairs, toSchedule);
+		if(matchups!=null) {
+			for(Event e:available) {
+				for(TeamPair tp:matchups) {
+					if(e.isInvolved(tp.team1)&&e.isInvolved(tp.team2)) {
+						events.add(e);
+						matchups.remove(tp);
+						break;
+					}
+				}
+			}
+			return events;
+		}
+		return null;
+	}
+	
+	
+	
+	private Boolean negotiate(List<Team> toSchedule, List<Event> available, List<Priority> priorities) {	
+		if(!missingEvent(toSchedule,available).isEmpty()) {
+			return false;
+		}
+		if(priorities.isEmpty()) {
+			//TODO: Schedule event for everyone in toSchedule
+		}else {
+			List<Event> nextEvents=filterPriority(available, priorities.get(0));
+			List<Team> scheduleNow = missingEvent(toSchedule, available);
+			//TODO: Schedule event for everyone in scheduleNow. Negotiate further with rest.
+		}
+		
+		return true;
+	}
+	
+	private List<Event> copyEventList(List<Event> eventList){
+		List<Event> newList = new ArrayList<>();
+		for(Event e: eventList) {
+			newList.add(e);
+		}
+		return newList;
+	}
+	
+	private List<Priority> copyPriorityList(List<Priority> priorityList){
+		List<Priority> newList = new ArrayList<>();
+		for(Priority p:priorityList) {
+			newList.add(p);
+		}
+		return newList;
 	}
 	
 	public Boolean schedule() {
@@ -338,10 +493,33 @@ public class Builder {
 		
 		int scheduleDay=0;
 		//First month of season
+		List<Priority> priorities = new ArrayList<>();
+		priorities.add(Priority.ALERT);
+		priorities.add(Priority.LENGTH);
+		priorities.add(Priority.DIVISION);
 		while(scheduleDay<30) {
+			if(!this.weekDay.isRestDay()) {
+				priorities.add(2, Priority.SERIES);
+			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
-			success&=negotiate(toSchedule);
+			List<Event> possible = new ArrayList<>();
+			for(Team team:toSchedule) {
+				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
+				for(Event e: teamEvent){
+					if(!possible.contains(e)) {
+						possible.add(e);
+					}
+				}
+			}
+			if(missingEvent(toSchedule, possible).isEmpty()) {
+				success&=negotiate(toSchedule, possible, copyPriorityList(priorities));
+				priorities.remove(Priority.SERIES);
+			}else {
+				reset();
+				return false;
+			}
+			
 			if(!success) {
 				reset();
 				return false;

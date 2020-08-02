@@ -43,6 +43,10 @@ public class Series implements Event{
 		return team==this.awayTeam;
 	}
 	
+	public Boolean isInvolved(Team t) {
+		return this.isAway(t)||this.isHome(t);
+	}
+	
 	public Team getOpponent(Team team) {
 		if (this.isHome(team)) {
 			return this.awayTeam;
