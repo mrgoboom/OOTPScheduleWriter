@@ -109,4 +109,8 @@ public class Team {
 		}
 		return 0;
 	}
+	
+	public String toString() {
+		return "T"+this.id;
+	}
 }

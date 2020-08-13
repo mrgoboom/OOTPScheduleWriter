@@ -7,6 +7,7 @@ public enum Priority implements Cloneable {
 	DIVISION,
 	INTERDIVISION,
 	ALERT,
+	SERIES_EXISTS,
 	SERIES,
 	LENGTH,
 	LENGTH_FORCE;
@@ -32,6 +33,8 @@ public enum Priority implements Cloneable {
 			return (event instanceof OffDay)||division.contains(((Series)event).getOpponent(team));
 		case INTERDIVISION:
 			return (event instanceof OffDay)||!division.contains(((Series)event).getOpponent(team));
+		case SERIES_EXISTS:
+			return (!event.isInvolved(team))||event instanceof Series;
 		case SERIES:
 			return event instanceof Series;
 		case LENGTH:

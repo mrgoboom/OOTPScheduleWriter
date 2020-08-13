@@ -6,20 +6,28 @@ import java.util.List;
 public class TeamPair {
 	public final Team team1;
 	public final Team team2;
-	public int count;
+	public double count;
 	private static List<TeamPair> thePairs=new ArrayList<>();
 	
 	private TeamPair(Team t1, Team t2) {
 		this.team1=t1;
 		this.team2=t2;
-		this.count=1;
+		if(t1!=t2) {
+			this.count=1;
+		}else {
+			this.count=0.3;
+		}
 	}
 	
 	public static TeamPair createNew(Team t1, Team t2) {
 		TeamPair test = new TeamPair(t1,t2);
 		for(TeamPair tp:TeamPair.thePairs) {
 			if(test.equals(tp)) {
-				tp.count++;
+				if(tp.team1==tp.team2) {
+					tp.count+=0.3;
+				}else {
+					tp.count+=1;
+				}
 				return tp;
 			}
 		}
@@ -47,6 +55,10 @@ public class TeamPair {
 	
 	public Boolean equals(TeamPair other) {
 		return (this.team1==other.team1&&this.team2==other.team2)||(this.team1==other.team2&&this.team2==other.team1);
+	}
+	
+	public String toString() {
+		return "("+this.team1.toString()+","+this.team2.toString()+") x"+this.count;
 	}
 	
 	private static TeamPair mostFrequent(List<TeamPair> available, Team team) {
@@ -107,10 +119,21 @@ public class TeamPair {
 				}
 			}
 			TeamPair thePair=mostFrequent(includesTeam, tryPair);
-			
+			if(thePair==null) {
+				return null;
+			}
 			List<Team> remaining = copyList(toMatch);
 			remaining.remove(tryPair);
-			remaining.remove(thePair.other(tryPair));
+			if(thePair.team1!=thePair.team2) {
+				remaining.remove(thePair.other(tryPair));
+				List<TeamPair> toRemove = new ArrayList<>();
+				for(TeamPair tp: excludesTeam) {
+					if(tp.contains(thePair.other(tryPair))) {
+						toRemove.add(tp);
+					}
+				}
+				excludesTeam.removeAll(toRemove);
+			}
 			List<TeamPair> otherPairs = getUniqueMatchups(excludesTeam, remaining);
 			if(otherPairs!=null) {
 				otherPairs.add(thePair);

@@ -24,4 +24,8 @@ public class OffDay implements Event {
 	public Boolean isInvolved(Team t) {
 		return t==this.team;
 	}
+	
+	public String toString() {
+		return this.team.toString()+" has "+this.length+" days off.";
+	}
 }
