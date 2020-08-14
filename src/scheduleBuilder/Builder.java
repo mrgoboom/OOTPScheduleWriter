@@ -246,6 +246,7 @@ public class Builder {
 		if(!missingEvent(toSchedule,available).isEmpty()) {
 			return false;
 		}
+		
 		List<Event> nextLevelEvents;
 		List<Event> previousLevelEvents=null;
 		List<Event> currentLevelEvents = copyEventList(available);
@@ -360,10 +361,11 @@ public class Builder {
 		//First month of season
 		List<Priority> priorities = new ArrayList<>();
 		priorities.add(Priority.ALERT);
-		priorities.add(Priority.SERIES_EXISTS);
 		priorities.add(Priority.LENGTH);
+		priorities.add(Priority.SERIES_EXISTS);
 		priorities.add(Priority.DIVISION);
 		while(scheduleDay<30) {
+			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
 				priorities.add(2, Priority.SERIES);
 			}
@@ -385,7 +387,6 @@ public class Builder {
 			}
 			if(missingEvent(toSchedule, possible).isEmpty()) {
 				success&=negotiate(toSchedule, possible, copyPriorityList(priorities));
-				priorities.remove(Priority.SERIES);
 			}else {
 				reset();
 				return false;
@@ -397,7 +398,41 @@ public class Builder {
 			}
 		}
 		//Until 5 days before all-star break
-		
+		priorities.remove(Priority.DIVISION);
+		priorities.add(Priority.INTERDIVISION);
+		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
+			priorities.remove(Priority.SERIES);
+			if(!this.weekDay.isRestDay()) {
+				priorities.add(2, Priority.SERIES);
+			}
+			List<Team> toSchedule=getWaiting(scheduleDay);
+			if(toSchedule.size()==0) {
+				scheduleDay++;
+				this.weekDay=this.weekDay.next();
+				continue;
+			}
+			System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
+			List<Event> possible = new ArrayList<>();
+			for(Team team:toSchedule) {
+				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
+				for(Event e: teamEvent){
+					if(!possible.contains(e)) {
+						possible.add(e);
+					}
+				}
+			}
+			if(missingEvent(toSchedule, possible).isEmpty()) {
+				success&=negotiate(toSchedule, possible, copyPriorityList(priorities));
+			}else {
+				reset();
+				return false;
+			}
+			
+			if(!success) {
+				reset();
+				return false;
+			}
+		}
 		//5 days before all-star break use this to avoid offday final day
 		
 		//4 days before all-star break

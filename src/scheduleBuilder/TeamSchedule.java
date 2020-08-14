@@ -72,11 +72,13 @@ public class TeamSchedule {
 		List<Event> fitMatchup = new ArrayList<>();
 		for(Event e:this.events) {
 			if(e instanceof Series) {
-				if(opponents.contains(((Series)e).getOpponent(this.team))) {
+				if(opponents.contains(((Series)e).getOpponent(this.team))&&((Series)e).getOpponent(this.team)!=this.team.getLastSeriesVS()) {
 					fitMatchup.add(e);
 				}
 			}else {
-				fitMatchup.add(e);
+				if(this.team.getLastSeriesVS()!=this.team) {
+					fitMatchup.add(e);
+				}
 			}
 		}
 		return fitMatchup;
