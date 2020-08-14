@@ -215,29 +215,12 @@ public class Builder {
 		return allPairs;
 	}
 	
-	private List<Event> selectEvents(List<Team> toSchedule, List<Event> available) {
-		List<Event> events = new ArrayList<>();
-		if(toSchedule.isEmpty()) {
-			return events;
-		}
-
+	
+	private List<TeamPair> selectMatchups(List<Team> toSchedule, List<Event> available, List<TeamPair> oldPairs) {
 		List<TeamPair> allPairs=createPairs(toSchedule, available);
-		List<TeamPair> matchups=TeamPair.getUniqueMatchups(allPairs, toSchedule);
-		if(matchups!=null) {
-			for(TeamPair tp:matchups) {
-				for(Event e:available) {
-					if((tp.team1!=tp.team2&&e instanceof Series)&&e.isInvolved(tp.team1)&&e.isInvolved(tp.team2)) {
-						events.add(e);
-						break;
-					}else if((tp.team1==tp.team2&&e instanceof OffDay)&&e.isInvolved(tp.team1)) {
-						events.add(e);
-						break;
-					}
-				}
-			}
-			return events;
-		}
-		return null;
+		List<TeamPair> matchups=TeamPair.getUniqueMatchups(allPairs, toSchedule, oldPairs);
+		
+		return matchups;
 	}
 	
 	
@@ -247,80 +230,60 @@ public class Builder {
 			return false;
 		}
 		
-		List<Event> nextLevelEvents;
-		List<Event> previousLevelEvents=null;
-		List<Event> currentLevelEvents = copyEventList(available);
-		List<Team> stillToSchedule = copyTeamList(toSchedule);
-		for(Priority current: priorities) {
-			nextLevelEvents=filterPriority(currentLevelEvents,current,stillToSchedule.get(0));
-			List<Team> scheduleNow = missingEvent(stillToSchedule, nextLevelEvents);
-			if(scheduleNow.isEmpty()) {
-				previousLevelEvents = currentLevelEvents;
-				currentLevelEvents = nextLevelEvents;
-				continue;
-			}
-			List<Event> scheduling = selectEvents(scheduleNow,currentLevelEvents);
-			if(scheduling==null) {
-				if(previousLevelEvents!=null) {
-					scheduling = selectEvents(scheduleNow, previousLevelEvents);
-				}
-				if(scheduling==null) {
-					return false;
-				}
-			}
-			for(Event e:scheduling) {
-				stillToSchedule.remove(e.homeTeam());
-				if(e instanceof Series) {
-					stillToSchedule.remove(((Series)e).awayTeam());
-					if(!scheduleNow.contains(e.homeTeam())) {
-						scheduleNow.add(e.homeTeam());
-					}else if(!scheduleNow.contains(((Series)e).awayTeam())) {
-						scheduleNow.add(((Series)e).awayTeam());
-					}
-				}
-				pushToSchedule(e);
-			}
-			if(stillToSchedule.isEmpty()) {
-				return true;
-			}else {
-				List<Event> toRemove = new ArrayList<>();
-				for(Event e:nextLevelEvents) {
-					if((scheduleNow.contains(e.homeTeam()))||(e instanceof Series&&(scheduleNow.contains(((Series)e).awayTeam())))) {
-						toRemove.add(e);
-					}
-				}
-				nextLevelEvents.removeAll(toRemove);
+		@SuppressWarnings("unchecked")
+		List<Event>[] levelEvents = new ArrayList[priorities.size()+1];
+		levelEvents[0] = copyEventList(available);
+		List<TeamPair> bestMatchups = null;
 
-				toRemove = new ArrayList<>();
-				for(Event e:currentLevelEvents) {
-					if((scheduleNow.contains(e.homeTeam()))||(e instanceof Series&&(scheduleNow.contains(((Series)e).awayTeam())))) {
-						toRemove.add(e);
+		List<Team> stillToSchedule = copyTeamList(toSchedule);
+		for(int i=0;i<priorities.size();i++) {
+			levelEvents[i+1]=filterPriority(levelEvents[i],priorities.get(i),stillToSchedule.get(0));
+
+			List<TeamPair> newMatchups = selectMatchups(toSchedule,levelEvents[i], bestMatchups);
+			
+			if(newMatchups!=null) {
+				bestMatchups = newMatchups;
+			}
+
+		}
+		List<TeamPair> newMatchups = selectMatchups(toSchedule, levelEvents[priorities.size()], bestMatchups);
+		if(newMatchups!=null) {
+			bestMatchups=newMatchups;
+		}
+		if(bestMatchups==null) {
+			return false;
+		}
+		int numMatchups=bestMatchups.size();
+		List<TeamPair> scheduledMatchups = new ArrayList<>();
+		List<Event> scheduledEvents = new ArrayList<>();
+		for(int i=levelEvents.length-1;i>=0;i--) {
+			List<TeamPair> toRemove = new ArrayList<>();
+			for(TeamPair tp: bestMatchups) {
+				for(Event e:levelEvents[i]) {
+					if((e instanceof OffDay&&tp.team1==tp.team2) && e.isInvolved(tp.team1)) {
+						scheduledMatchups.add(tp);
+						scheduledEvents.add(e);
+						toRemove.add(tp);
+						break;
+					}else if((e instanceof Series&&tp.team1!=tp.team2)&& e.isInvolved(tp.team1)&&e.isInvolved(tp.team2)){
+						//TODO: Refine prefer home/away
+						scheduledMatchups.add(tp);
+						scheduledEvents.add(e);
+						toRemove.add(tp);
+						break;
 					}
 				}
-				previousLevelEvents=currentLevelEvents;
-				currentLevelEvents=nextLevelEvents;
 			}
+			bestMatchups.removeAll(toRemove);
 		}
-		List<Event> scheduling = selectEvents(stillToSchedule,currentLevelEvents);
-		if(scheduling==null) {
-			if(previousLevelEvents!=null) {
-				scheduling = selectEvents(stillToSchedule, previousLevelEvents);
-			}
-			if(scheduling==null) {
-				return false;
-			}
+		if(scheduledMatchups.size()!=numMatchups||bestMatchups.size()!=0) {
+			return false;
 		}
-		for(Event e:scheduling) {
-			stillToSchedule.remove(e.homeTeam());
-			if(e instanceof Series) {
-				stillToSchedule.remove(((Series)e).awayTeam());
-			}
+		for(Event e:scheduledEvents) {
+			System.out.println(e);
 			pushToSchedule(e);
 		}
-		if(stillToSchedule.isEmpty()) {
-			return true;
-		}
-		return false;
+		return true;
 	}
 	
 	private List<Team> copyTeamList(List<Team> teamList){

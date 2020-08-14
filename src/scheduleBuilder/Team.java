@@ -13,12 +13,12 @@ public class Team {
 	private int consecutiveAwayGames;
 	private int gamesWithoutBreak;
 	public int restDays;
-	private Team lastSeriesVS;//Use self to mark break
+	private Team lastSeriesVS;
 	
 	public Team () {
 		this.consecutiveHomeGames=0;
 		this.consecutiveAwayGames=0;
-		this.gamesWithoutBreak=0;
+		this.gamesWithoutBreak=-1;
 		this.lastSeriesVS=null;
 		this.schedule = new TeamSchedule(this);
 		Team.teams.add(this);
@@ -28,6 +28,10 @@ public class Team {
 	
 	public Team getLastSeriesVS() {
 		return this.lastSeriesVS;
+	}
+	
+	public int getGamesWithoutBreak() {
+		return this.gamesWithoutBreak;
 	}
 	
 	public int getHomeStand() {
@@ -50,7 +54,7 @@ public class Team {
 	public void reset() {
 		this.consecutiveHomeGames=0;
 		this.consecutiveAwayGames=0;
-		this.gamesWithoutBreak=0;
+		this.gamesWithoutBreak=-1;
 		this.lastSeriesVS=null;
 		this.schedule.clear();
 		this.restDays=22;
@@ -70,7 +74,11 @@ public class Team {
 	public void scheduleEvent(Event event) {
 		if(event instanceof Series) {
 			Series s = (Series) event;
-			this.gamesWithoutBreak += s.games();
+			if(this.gamesWithoutBreak>=0) {
+				this.gamesWithoutBreak += s.games();
+			}else {
+				this.gamesWithoutBreak = s.games();
+			}
 			if(s.isHome(this)) {
 				this.consecutiveHomeGames += s.games();
 				this.consecutiveAwayGames = 0;
@@ -85,7 +93,6 @@ public class Team {
 		}else if(event instanceof OffDay){
 			this.gamesWithoutBreak=0;
 			this.restDays--;
-			this.lastSeriesVS=this;
 		}else {
 			System.err.println("Tried to schedule unknown event.");
 			return;

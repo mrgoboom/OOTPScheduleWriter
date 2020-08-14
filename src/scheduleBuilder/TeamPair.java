@@ -15,7 +15,7 @@ public class TeamPair {
 		if(t1!=t2) {
 			this.count=1;
 		}else {
-			this.count=0.3;
+			this.count=0.28;
 		}
 	}
 	
@@ -82,7 +82,8 @@ public class TeamPair {
 		return newList;
 	}
 	
-	public static List<TeamPair> getUniqueMatchups(List<TeamPair> available, List<Team> toMatch){
+	//TODO: Switch to iterative. Weird errors are occuring.
+	public static List<TeamPair> getUniqueMatchups(List<TeamPair> available, List<Team> toMatch, List<TeamPair> oldPairs){
 		if(toMatch.size()==0) {
 			return new ArrayList<>();
 		}else if(toMatch.size()==1) {
@@ -91,6 +92,15 @@ public class TeamPair {
 				List<TeamPair> tpList = new ArrayList<>();
 				tpList.add(tp);
 				return tpList;
+			}else if(oldPairs!=null) {
+				for(TeamPair op:oldPairs) {
+					if(op.contains(toMatch.get(0))) {
+						List<TeamPair> tpList = new ArrayList<>();
+						tpList.add(op);
+						return tpList;
+					}
+				}
+				return null;
 			}else {
 				return null;
 			}
@@ -120,7 +130,19 @@ public class TeamPair {
 			}
 			TeamPair thePair=mostFrequent(includesTeam, tryPair);
 			if(thePair==null) {
-				return null;
+				boolean foundPair=false;
+				if(oldPairs!=null) {
+					for(TeamPair op: oldPairs) {
+						if(op.contains(tryPair)) {
+							foundPair=true;
+							thePair=op;
+							break;
+						}
+					}
+				}
+				if(!foundPair) {
+					return null;
+				}
 			}
 			List<Team> remaining = copyList(toMatch);
 			remaining.remove(tryPair);
@@ -134,7 +156,7 @@ public class TeamPair {
 				}
 				excludesTeam.removeAll(toRemove);
 			}
-			List<TeamPair> otherPairs = getUniqueMatchups(excludesTeam, remaining);
+			List<TeamPair> otherPairs = getUniqueMatchups(excludesTeam, remaining, oldPairs);
 			if(otherPairs!=null) {
 				otherPairs.add(thePair);
 				return otherPairs;

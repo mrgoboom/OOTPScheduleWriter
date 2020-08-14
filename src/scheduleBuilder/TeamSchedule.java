@@ -76,7 +76,7 @@ public class TeamSchedule {
 					fitMatchup.add(e);
 				}
 			}else {
-				if(this.team.getLastSeriesVS()!=this.team) {
+				if(this.team.getGamesWithoutBreak()!=0) {
 					fitMatchup.add(e);
 				}
 			}
