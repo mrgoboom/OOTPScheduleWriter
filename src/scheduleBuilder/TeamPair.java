@@ -1,6 +1,7 @@
 package scheduleBuilder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TeamPair {
@@ -24,7 +25,7 @@ public class TeamPair {
 		for(TeamPair tp:TeamPair.thePairs) {
 			if(test.equals(tp)) {
 				if(tp.team1==tp.team2) {
-					tp.count+=0.3;
+					tp.count+=0.28;
 				}else {
 					tp.count+=1;
 				}
@@ -33,6 +34,15 @@ public class TeamPair {
 		}
 		TeamPair.thePairs.add(test);
 		return test;
+	}
+	
+	public static TeamPair findPair(Team t1, Team t2) {
+		for(TeamPair tp:thePairs) {
+			if(tp.contains(t1)&&tp.contains(t2)) {
+				return tp;
+			}
+		}
+		return null;
 	}
 	
 	public static void clearPairs() {
@@ -61,7 +71,7 @@ public class TeamPair {
 		return "("+this.team1.toString()+","+this.team2.toString()+") x"+this.count;
 	}
 	
-	private static TeamPair mostFrequent(List<TeamPair> available, Team team) {
+	private static TeamPair mostFrequent(List<TeamPair> available) {
 		if(available==null||available.size()==0) {
 			return null;
 		}
@@ -82,87 +92,92 @@ public class TeamPair {
 		return newList;
 	}
 	
-	//TODO: Switch to iterative. Weird errors are occuring.
+	private static List<TeamPair> copyTPList(List<TeamPair> original){
+		List<TeamPair> newList = new ArrayList<>();
+		for(TeamPair tp:original) {
+			newList.add(tp);
+		}
+		return newList;
+	}
+	
 	public static List<TeamPair> getUniqueMatchups(List<TeamPair> available, List<Team> toMatch, List<TeamPair> oldPairs){
-		if(toMatch.size()==0) {
-			return new ArrayList<>();
-		}else if(toMatch.size()==1) {
-			TeamPair tp=TeamPair.mostFrequent(available, toMatch.get(0));
-			if(tp!=null) {
-				List<TeamPair> tpList = new ArrayList<>();
-				tpList.add(tp);
-				return tpList;
-			}else if(oldPairs!=null) {
-				for(TeamPair op:oldPairs) {
-					if(op.contains(toMatch.get(0))) {
-						List<TeamPair> tpList = new ArrayList<>();
-						tpList.add(op);
-						return tpList;
-					}
-				}
-				return null;
-			}else {
-				return null;
-			}
-		}else {
-			Team tryPair=toMatch.get(0);
-			int fewest=Integer.MAX_VALUE;
-			for(Team t:toMatch) {
-				int matches=0;
-				for(TeamPair tp:available) {
-					if(tp.contains(t)) {
-						matches++;
-					}
-				}
-				if(matches<fewest) {
-					fewest=matches;
-					tryPair=t;
-				}
-			}
-			List<TeamPair> includesTeam=new ArrayList<>();
-			List<TeamPair> excludesTeam=new ArrayList<>();
-			for(TeamPair tp:available) {
-				if(tp.contains(tryPair)) {
-					includesTeam.add(tp);
-				}else {
-					excludesTeam.add(tp);
-				}
-			}
-			TeamPair thePair=mostFrequent(includesTeam, tryPair);
-			if(thePair==null) {
-				boolean foundPair=false;
-				if(oldPairs!=null) {
-					for(TeamPair op: oldPairs) {
-						if(op.contains(tryPair)) {
-							foundPair=true;
-							thePair=op;
-							break;
+		Boolean success=false;
+		int attempts=0;
+		List<TeamPair> newPairs=null;
+		while(!success&&attempts<16) {
+			newPairs = new ArrayList<>();
+			List<Team> stillToMatch = copyList(toMatch);
+			Collections.shuffle(stillToMatch);
+			List<TeamPair> stillAvailable = copyTPList(available);
+			outer: while(stillToMatch.size()>0) {
+				Team fewestMatches=stillToMatch.get(0);
+				int fewest = Integer.MAX_VALUE;
+				for(Team t:stillToMatch) {
+					int matches=0;
+					for(TeamPair tp:stillAvailable) {
+						if(tp.contains(t)) {
+							matches++;
 						}
 					}
-				}
-				if(!foundPair) {
-					return null;
-				}
-			}
-			List<Team> remaining = copyList(toMatch);
-			remaining.remove(tryPair);
-			if(thePair.team1!=thePair.team2) {
-				remaining.remove(thePair.other(tryPair));
-				List<TeamPair> toRemove = new ArrayList<>();
-				for(TeamPair tp: excludesTeam) {
-					if(tp.contains(thePair.other(tryPair))) {
-						toRemove.add(tp);
+					if(matches<fewest) {
+						fewest=matches;
+						fewestMatches=t;
 					}
 				}
-				excludesTeam.removeAll(toRemove);
+				List<Team> opponents=new ArrayList<>();
+				List<TeamPair> includesTeam=new ArrayList<>();
+				List<TeamPair> excludesTeam=new ArrayList<>();
+				for(TeamPair tp:stillAvailable) {
+					if(tp.contains(fewestMatches)) {
+						includesTeam.add(tp);
+						opponents.add(tp.other(fewestMatches));
+					}else {
+						excludesTeam.add(tp);
+					}
+				}
+				//Team opponent = Team.findTeamWithID(fewestMatches.schedule.mostSeriesRemaining(opponents));
+				//TeamPair thePair=TeamPair.findPair(fewestMatches, opponent);
+				TeamPair thePair=mostFrequent(includesTeam);
+				if(fewest==0||thePair==null) {
+					boolean foundPair=false;
+					if(oldPairs!=null) {
+						for(TeamPair op: oldPairs) {
+							if(op.contains(fewestMatches)) {
+								for(TeamPair np:newPairs) {
+									if(np.contains(op.other(fewestMatches))) {
+										break outer;
+									}
+								}
+								thePair=op;
+								foundPair=true;
+								break;
+							}
+						}
+					}
+					if(!foundPair) {
+						break outer;
+					}
+				}
+				stillToMatch.remove(thePair.team1);
+				stillToMatch.remove(thePair.team2);
+				newPairs.add(thePair);
+				for(TeamPair tp:excludesTeam) {
+					if(tp.contains(thePair.other(fewestMatches))) {
+						includesTeam.add(tp);
+					}
+				}
+				stillAvailable.removeAll(includesTeam);
 			}
-			List<TeamPair> otherPairs = getUniqueMatchups(excludesTeam, remaining, oldPairs);
-			if(otherPairs!=null) {
-				otherPairs.add(thePair);
-				return otherPairs;
+			if(stillToMatch.size()==0) {
+				success=true;
 			}else {
-				return null;
+				attempts++;
 			}
+		}
+		if(success) {
+			return newPairs;
+		}else {
+			return null;
 		}
 	}
 }

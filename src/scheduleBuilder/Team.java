@@ -71,6 +71,66 @@ public class Team {
 		return error;
 	}
 
+	public void resetLastEvent() {
+		Event e = this.schedule.getLastEvent();
+		List<Event> theSchedule = this.schedule.getSchedule();
+		if(e instanceof OffDay) {
+			int gamesSinceBreak=0;
+			this.restDays++;
+			for(int i=theSchedule.size()-2;i>=0;i--) {
+				Event previous = theSchedule.get(i);
+				if(previous instanceof OffDay) {
+					break;
+				}else {
+					gamesSinceBreak += previous.games();
+				}
+			}
+			this.gamesWithoutBreak = gamesSinceBreak;
+		}else {
+			this.gamesWithoutBreak -= e.games();
+			if(e.homeTeam()==this) {
+				this.consecutiveHomeGames -= e.games();
+				if(this.consecutiveHomeGames==0) {
+					int awayGames = 0;
+					for(int i=theSchedule.size()-2;i>=0;i--) {
+						Event previous = theSchedule.get(i);
+						if(previous instanceof Series && ((Series) previous).isHome(this)){
+							break;
+						}else {
+							awayGames += previous.games();
+						}
+					}
+					this.consecutiveAwayGames = awayGames;
+				}
+			}else {
+				this.consecutiveAwayGames -= e.games();
+				if(this.consecutiveAwayGames==0) {
+					int homeGames = 0;
+					for(int i=theSchedule.size()-2;i>=0;i--) {
+						Event previous = theSchedule.get(i);
+						if(previous instanceof Series && ((Series) previous).isAway(this)){
+							break;
+						}else {
+							homeGames += previous.games();
+						}
+					}
+					this.consecutiveHomeGames = homeGames;
+				}
+			}
+		}
+		this.schedule.resetLastEvent();
+		if(this.schedule.getLastSeries()==null) {
+			this.lastSeriesVS=null;
+		}else {
+			this.lastSeriesVS=this.schedule.getLastSeries().getOpponent(this);
+		}
+	}
+	
+	public Boolean teamFromSameDivision(Team other) {
+		//TODO: Less hardcodey, please
+		return (this.id-1)/5==(other.id-1)/5;
+	}
+	
 	public void scheduleEvent(Event event) {
 		if(event instanceof Series) {
 			Series s = (Series) event;
@@ -92,7 +152,9 @@ public class Team {
 			this.lastSeriesVS=s.getOpponent(this);
 		}else if(event instanceof OffDay){
 			this.gamesWithoutBreak=0;
-			this.restDays--;
+			if(event.length()==1) {
+				this.restDays--;
+			}
 		}else {
 			System.err.println("Tried to schedule unknown event.");
 			return;

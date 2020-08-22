@@ -1,6 +1,5 @@
 package scheduleBuilder;
 
-import java.time.temporal.ValueRange;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -8,10 +7,12 @@ import java.util.List;
 public class Builder {
 	private final List<List<Team>> divisions;
 	private final List<Team> teams;
-	private final int totalDays=181;
+	public static final int numTeams = 14;
+	public static final int totalDays=181;
 	private final int allStarBreakStart=95;
 	private final int allStarBreakLen=3;
 	private DayOfWeek weekDay;
+	private int furthestProgress;
 	
 	public Builder(List<List<Team>> structure) {
 		this.divisions=structure;
@@ -21,7 +22,8 @@ public class Builder {
 				teams.add(t);
 			}
 		}
-		//Collections.shuffle(this.teams);
+		Collections.shuffle(this.teams);
+		this.furthestProgress=-1;
 		this.weekDay=DayOfWeek.THURSDAY;
 	}
 	
@@ -46,8 +48,6 @@ public class Builder {
 					System.err.println("There is a series including a team not found in any division.");
 					return false;
 				}
-			}else {
-				e.homeTeam().schedule.addOffDay((OffDay)e);
 			}
 		}
 		return true;
@@ -129,25 +129,59 @@ public class Builder {
 		return waiting;
 	}
 	
-	private List<Event> filterPriority(List<Event> input, Priority priority, Team dontRest){
+	private List<Event> filterPriority(List<Event> input, Priority priority, Team dontRest, int catchup){
 		List<Event> output = new ArrayList<>();
-		if(priority==Priority.LENGTH||priority==Priority.LENGTH_FORCE) {
-			ValueRange desiredLength;
+		if(priority==Priority.PREFERRED_LENGTH) {
+			int[] desiredLength;
 			switch(this.weekDay) {
 			case MONDAY:
+			case THURSDAY:
 			case FRIDAY:
-				desiredLength=ValueRange.of(3, 4);
+				desiredLength=new int[] {4};
 				break;
 			case TUESDAY:
 			case SATURDAY:
-				desiredLength=ValueRange.of(2, 3);
+			case WEDNESDAY:
+			case SUNDAY:
+				desiredLength=new int[] {2};
+				break;
+			default:
+				desiredLength=new int[] {2,3,4};
+				break;
+			}
+			for(Event e:input) {
+				if(priority.matchesPriority(e, findDivision(e.homeTeam()), e.homeTeam(), desiredLength)) {
+					output.add(e);
+				}
+			}
+		}else if(priority==Priority.LENGTH||priority==Priority.LENGTH_FORCE) {
+			int[] desiredLength;
+			switch(this.weekDay) {
+			case MONDAY:
+			case FRIDAY:
+				if(priority==Priority.LENGTH) {
+					desiredLength=new int[] {3,4};
+				}else {
+					desiredLength=new int[] {3};
+				}
+				break;
+			case TUESDAY:
+			case SATURDAY:
+				if(priority==Priority.LENGTH) {
+					desiredLength=new int[] {2,3};
+				}else {
+					desiredLength=new int[] {2};
+				}
 				break;
 			case WEDNESDAY:
 			case SUNDAY:
-				desiredLength=ValueRange.of(2, 2);
+				desiredLength=new int[] {2};
+				break;
+			case THURSDAY:
+				desiredLength=new int[] {4};
 				break;
 			default:
-				desiredLength=ValueRange.of(4, 4);
+				desiredLength=new int[] {2,3,4};
 			}
 			for(Event e:input) {
 				if(priority.matchesPriority(e, findDivision(e.homeTeam()), e.homeTeam(), desiredLength)) {
@@ -157,6 +191,13 @@ public class Builder {
 		}else if(priority==Priority.SERIES_EXISTS&&this.weekDay.isRestDay()) {
 			for(Event e:input) {
 				if(priority.matchesPriority(e, findDivision(e.homeTeam()), dontRest, null)) {
+					output.add(e);
+				}
+			}
+		}else if(priority==Priority.CATCHUP){
+			int[] desiredLength = new int[] {catchup};
+			for(Event e:input) {
+				if(priority.matchesPriority(e, findDivision(e.homeTeam()), dontRest, desiredLength)) {
 					output.add(e);
 				}
 			}
@@ -223,9 +264,88 @@ public class Builder {
 		return matchups;
 	}
 	
+	private Boolean walkBack(List<Team> scheduleIssue) {
+		Boolean success=true;
+		int issueDay = Integer.MAX_VALUE;
+		for(Team team:scheduleIssue) {
+			if(team.schedule.getDaysScheduled()<issueDay) {
+				issueDay=team.schedule.getDaysScheduled();
+			}
+			team.resetLastEvent();
+		}
+		int scheduleDay=issueDay;
+		for(Team team:this.teams) {
+			while(team.schedule.getDaysScheduled()>issueDay) {
+				team.resetLastEvent();
+			}
+			if(team.schedule.getDaysScheduled()<scheduleDay) {
+				scheduleDay=team.schedule.getDaysScheduled();
+			}
+		}
+		this.weekDay=DayOfWeek.THURSDAY;
+		this.weekDay=this.weekDay.advanceDays(scheduleDay);
+		
+		List<Priority> matchDay = new ArrayList<>();
+		matchDay.add(Priority.CATCHUP);
+		matchDay.add(Priority.ALERT);
+		while(scheduleDay<issueDay) {
+			List<Team> toSchedule = getWaiting(scheduleDay);
+			if(toSchedule.size()==0) {
+				scheduleDay++;
+				this.weekDay=this.weekDay.next();
+				continue;
+			}
+			List<Event> possible = new ArrayList<>();
+			for(Team team:toSchedule) {
+				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
+				
+				for(Event e: teamEvent){
+					if(!possible.contains(e)) {
+						possible.add(e);
+					}
+				}
+			}
+			if(missingEvent(toSchedule, possible).isEmpty()) {
+				success&=negotiate(toSchedule, possible, copyPriorityList(matchDay),0);
+			}else {
+				return false;
+			}
+			if(!success) {
+				return false;
+			}
+		}
+		matchDay.remove(Priority.CATCHUP);
+		matchDay.add(0,Priority.LENGTH);
+		matchDay.add(Priority.SERIES_EXISTS);
+		for(;;) {
+			List<Team> toSchedule = getWaiting(scheduleDay);
+			if(toSchedule.size()==0) {
+				break;
+			}
+			List<Event> possible = new ArrayList<>();
+			for(Team team:toSchedule) {
+				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
+				
+				for(Event e: teamEvent){
+					if(!possible.contains(e)) {
+						possible.add(e);
+					}
+				}
+			}
+			if(missingEvent(toSchedule, possible).isEmpty()) {
+				success&=negotiate(toSchedule, possible, copyPriorityList(matchDay),0);
+			}else {
+				return false;
+			}
+			if(!success) {
+				return false;
+			}
+		}
+		
+		return success;
+	}
 	
-	
-	private Boolean negotiate(List<Team> toSchedule, List<Event> available, List<Priority> priorities) {	
+	private Boolean negotiate(List<Team> toSchedule, List<Event> available, List<Priority> priorities, int forceLength) {	
 		if(!missingEvent(toSchedule,available).isEmpty()) {
 			return false;
 		}
@@ -237,7 +357,11 @@ public class Builder {
 
 		List<Team> stillToSchedule = copyTeamList(toSchedule);
 		for(int i=0;i<priorities.size();i++) {
-			levelEvents[i+1]=filterPriority(levelEvents[i],priorities.get(i),stillToSchedule.get(0));
+			Team dontRest=null;
+			if(stillToSchedule.size()==this.teams.size()) {
+				dontRest=stillToSchedule.get(0);
+			}
+			levelEvents[i+1]=filterPriority(levelEvents[i],priorities.get(i),dontRest,0);
 
 			List<TeamPair> newMatchups = selectMatchups(toSchedule,levelEvents[i], bestMatchups);
 			
@@ -280,7 +404,7 @@ public class Builder {
 			return false;
 		}
 		for(Event e:scheduledEvents) {
-			System.out.println(e);
+			//System.out.println(e);
 			pushToSchedule(e);
 		}
 		return true;
@@ -314,7 +438,7 @@ public class Builder {
 		Boolean success=true;
 		for(Team t: this.teams) {
 			int gameDays=t.schedule.preScheduleGameDays();
-			for(int i=0;i<this.totalDays-gameDays-this.allStarBreakLen;i++) {
+			for(int i=0;i<Builder.totalDays-gameDays-this.allStarBreakLen;i++) {
 				t.schedule.addOffDay(new OffDay(t,1));
 			}
 			t.schedule.shuffleAll();
@@ -323,10 +447,11 @@ public class Builder {
 		int scheduleDay=0;
 		//First month of season
 		List<Priority> priorities = new ArrayList<>();
-		priorities.add(Priority.ALERT);
 		priorities.add(Priority.LENGTH);
+		priorities.add(Priority.ALERT);
 		priorities.add(Priority.SERIES_EXISTS);
 		priorities.add(Priority.DIVISION);
+		priorities.add(Priority.PREFERRED_LENGTH);
 		while(scheduleDay<30) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
@@ -338,7 +463,7 @@ public class Builder {
 				this.weekDay=this.weekDay.next();
 				continue;
 			}
-			System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
+			//System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
 			List<Event> possible = new ArrayList<>();
 			for(Team team:toSchedule) {
 				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
@@ -349,20 +474,26 @@ public class Builder {
 				}
 			}
 			if(missingEvent(toSchedule, possible).isEmpty()) {
-				success&=negotiate(toSchedule, possible, copyPriorityList(priorities));
+				success&=negotiate(toSchedule, possible, copyPriorityList(priorities),0);
 			}else {
-				reset();
-				return false;
+				success&=walkBack(toSchedule);
+				if(!success) {
+					reset();
+					return false;
+				}
 			}
 			
 			if(!success) {
-				reset();
-				return false;
+				success|=walkBack(toSchedule);
+				if(!success) {
+					reset();
+					return false;
+				}
 			}
 		}
 		//Until 5 days before all-star break
 		priorities.remove(Priority.DIVISION);
-		priorities.add(Priority.INTERDIVISION);
+		priorities.add(4,Priority.INTERDIVISION);
 		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
@@ -374,7 +505,7 @@ public class Builder {
 				this.weekDay=this.weekDay.next();
 				continue;
 			}
-			System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
+			//System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
 			List<Event> possible = new ArrayList<>();
 			for(Team team:toSchedule) {
 				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
@@ -385,33 +516,204 @@ public class Builder {
 				}
 			}
 			if(missingEvent(toSchedule, possible).isEmpty()) {
-				success&=negotiate(toSchedule, possible, copyPriorityList(priorities));
+				success&=negotiate(toSchedule, possible, copyPriorityList(priorities),0);
 			}else {
-				reset();
-				return false;
+				success&=walkBack(toSchedule);
+				if(!success) {
+					reset();
+					return false;
+				}
 			}
 			
 			if(!success) {
-				reset();
-				return false;
+				success|=walkBack(toSchedule);
+				if(!success) {
+					reset();
+					return false;
+				}
 			}
 		}
-		//5 days before all-star break use this to avoid offday final day
 		
-		//4 days before all-star break
+		//4-5 days before all-star break use this to avoid offday final day
+		priorities.remove(Priority.INTERDIVISION);
+		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()-1)) {
+			priorities.remove(Priority.SERIES);
+			if(!this.weekDay.isRestDay()) {
+				priorities.add(2, Priority.SERIES);
+			}
+			List<Team> toSchedule=getWaiting(scheduleDay);
+			if(toSchedule.size()==0) {
+				scheduleDay++;
+				this.weekDay=this.weekDay.next();
+				continue;
+			}
+			//System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
+			List<Event> possible = new ArrayList<>();
+			for(Team team:toSchedule) {
+				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
+				for(Event e: teamEvent){
+					if(!possible.contains(e)) {
+						possible.add(e);
+					}
+				}
+			}
+			if(missingEvent(toSchedule, possible).isEmpty()) {
+				success&=negotiate(toSchedule, possible, copyPriorityList(priorities),0);
+			}else {
+				success&=walkBack(toSchedule);
+				if(!success) {
+					reset();
+					return false;
+				}
+			}
+			
+			if(!success) {
+				success|=walkBack(toSchedule);
+				if(!success) {
+					reset();
+					return false;
+				}
+			}
+		}
 		
-		//3 days before all-star break
-		
-		//2 days before all-star break
+		//2-3 days before all-star break
+		priorities.remove(Priority.LENGTH);
+		priorities.remove(Priority.PREFERRED_LENGTH);
+		priorities.add(0, Priority.LENGTH_FORCE);
+		while(scheduleDay<this.allStarBreakStart-1) {
+			priorities.remove(Priority.SERIES);
+			if(!this.weekDay.isRestDay()) {
+				priorities.add(2, Priority.SERIES);
+			}
+			List<Team> toSchedule=getWaiting(scheduleDay);
+			if(toSchedule.size()==0) {
+				scheduleDay++;
+				this.weekDay=this.weekDay.next();
+				continue;
+			}
+			//System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
+			List<Event> possible = new ArrayList<>();
+			for(Team team:toSchedule) {
+				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
+				for(Event e: teamEvent){
+					if(!possible.contains(e)) {
+						possible.add(e);
+					}
+				}
+			}
+			if(missingEvent(toSchedule, possible).isEmpty()) {
+				success&=negotiate(toSchedule, possible, copyPriorityList(priorities),0);
+			}else {
+				success&=walkBack(toSchedule);
+				if(!success) {
+					reset();
+					return false;
+				}
+			}
+			
+			if(!success) {
+				success|=walkBack(toSchedule);
+				if(!success) {
+					reset();
+					return false;
+				}
+			}
+		}
 		
 		//day before all-star break (not ideal if any teams actually need scheduling here)
+		while(scheduleDay<this.allStarBreakStart) {
+			List<Team> toSchedule=getWaiting(scheduleDay);
+			if(toSchedule.size()==0) {
+				scheduleDay++;
+				this.weekDay=this.weekDay.next();
+				continue;
+			}
+			//System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
+			for(Team team:toSchedule) {
+				Event rest = restDay(team, team.schedule.getEvents());
+				if(rest==null) {
+					reset();
+					return false;
+				}
+				pushToSchedule(rest);
+			}
+		}
 
+		if(getWaiting(scheduleDay).size()!=this.teams.size()) {
+			reset();
+			return false;
+		}
+		//System.out.println("All star break reached.");
+		while(scheduleDay<this.allStarBreakLen+this.allStarBreakStart) {
+			List<Team> toSchedule=getWaiting(scheduleDay);
+			if(toSchedule.size()==0) {
+				scheduleDay+=this.allStarBreakLen;
+				this.weekDay=this.weekDay.advanceDays(3);
+				continue;
+			}
+			for(Team team:toSchedule) {
+				Event allStarBreak = new OffDay(team, 3);
+				pushToSchedule(allStarBreak);
+			}
+		}
 		
-		System.out.println("All star break reached.");
-		//Last 30 days
 		
-		System.out.println("Made it to September");
-		//To end of season
+		//To last 30 days
+		priorities.remove(Priority.LENGTH_FORCE);
+		priorities.add(0, Priority.LENGTH);
+		priorities.add(Priority.INTERDIVISION);
+		priorities.add(Priority.PREFERRED_LENGTH);
+		while(scheduleDay<(Builder.totalDays)) {
+
+			priorities.remove(Priority.SERIES);
+			if(!this.weekDay.isRestDay()) {
+				priorities.add(2, Priority.SERIES);
+			}
+			List<Team> toSchedule=getWaiting(scheduleDay);
+			if(toSchedule.size()==0) {
+				scheduleDay++;
+				this.weekDay=this.weekDay.next();
+				continue;
+			}
+			if(scheduleDay>170) {
+				System.out.println("Day "+scheduleDay+"!");
+			}
+			//System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
+			List<Event> possible = new ArrayList<>();
+			for(Team team:toSchedule) {
+				List<Event> teamEvent=team.schedule.remainingMatchups(toSchedule);
+				for(Event e: teamEvent){
+					if(!possible.contains(e)) {
+						possible.add(e);
+					}
+				}
+			}
+			if(missingEvent(toSchedule, possible).isEmpty()) {
+				success&=negotiate(toSchedule, possible, copyPriorityList(priorities),0);
+			}else {
+				success&=walkBack(toSchedule);
+				if(!success) {
+					if(scheduleDay>this.furthestProgress) {
+						this.furthestProgress=scheduleDay;
+						System.out.println("New record! Failed at day "+scheduleDay);
+					}
+					reset();
+					return false;
+				}
+			}
+			
+			if(!success) {
+				success|=walkBack(toSchedule);
+				if(!success) {
+					if(scheduleDay>this.furthestProgress) {
+						this.furthestProgress=scheduleDay;
+						System.out.println("New record! Failed at day "+scheduleDay);
+					}
+					reset();
+					return false;
+				}
+			}
+		}
 		
 		System.out.println("Schedule completed successfully.");
 		return success;
