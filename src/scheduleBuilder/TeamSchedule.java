@@ -136,6 +136,26 @@ public class TeamSchedule {
 		return fitMatchup;
 	}
 	
+	public void scheduleGames() {
+		int day = 1;
+		for(int i=0;i<this.teamSchedule.size();i++) {
+			Event event = this.teamSchedule.get(i);
+			if(event.isHome(this.team)) {
+				event.schedule(day);
+			}
+			day += event.length();
+		}
+	}
+	
+	public Event getEventByDay(int day) {
+		for(Event event: this.teamSchedule) {
+			if(event.coversDay(day)) {
+				return event;
+			}
+		}
+		return null;
+	}
+	
 	public void addToSchedule(Event e) {
 		this.teamSchedule.add(e);
 		this.daysScheduled += e.length();
@@ -183,6 +203,14 @@ public class TeamSchedule {
 		}
 		for (Series s:this.awaySeries) {
 			totalGames+=s.games();
+		}
+		return totalGames;
+	}
+	
+	public int postScheduleGameCount() {
+		int totalGames=0;
+		for (Event e:this.teamSchedule) {
+			totalGames+=e.games();
 		}
 		return totalGames;
 	}

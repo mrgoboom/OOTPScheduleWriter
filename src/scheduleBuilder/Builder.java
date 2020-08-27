@@ -9,7 +9,7 @@ public class Builder {
 	private final List<Team> teams;
 	public static final int numTeams = 14;
 	public static final int totalDays=181;
-	private final int allStarBreakStart=95;
+	public static final int allStarBreakStart=95;
 	private final int allStarBreakLen=3;
 	private DayOfWeek weekDay;
 	private int furthestProgress;
@@ -494,7 +494,7 @@ public class Builder {
 		//Until 5 days before all-star break
 		priorities.remove(Priority.DIVISION);
 		priorities.add(4,Priority.INTERDIVISION);
-		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
+		while(scheduleDay<Builder.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
 				priorities.add(2, Priority.SERIES);
@@ -536,7 +536,7 @@ public class Builder {
 		
 		//4-5 days before all-star break use this to avoid offday final day
 		priorities.remove(Priority.INTERDIVISION);
-		while(scheduleDay<this.allStarBreakStart-(Series.getMaxSeriesLen()-1)) {
+		while(scheduleDay<Builder.allStarBreakStart-(Series.getMaxSeriesLen()-1)) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
 				priorities.add(2, Priority.SERIES);
@@ -580,7 +580,7 @@ public class Builder {
 		priorities.remove(Priority.LENGTH);
 		priorities.remove(Priority.PREFERRED_LENGTH);
 		priorities.add(0, Priority.LENGTH_FORCE);
-		while(scheduleDay<this.allStarBreakStart-1) {
+		while(scheduleDay<Builder.allStarBreakStart-1) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
 				priorities.add(2, Priority.SERIES);
@@ -621,7 +621,7 @@ public class Builder {
 		}
 		
 		//day before all-star break (not ideal if any teams actually need scheduling here)
-		while(scheduleDay<this.allStarBreakStart) {
+		while(scheduleDay<Builder.allStarBreakStart) {
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
 				scheduleDay++;
@@ -644,7 +644,7 @@ public class Builder {
 			return false;
 		}
 		//System.out.println("All star break reached.");
-		while(scheduleDay<this.allStarBreakLen+this.allStarBreakStart) {
+		while(scheduleDay<this.allStarBreakLen+Builder.allStarBreakStart) {
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
 				scheduleDay+=this.allStarBreakLen;
@@ -716,6 +716,10 @@ public class Builder {
 		}
 		
 		System.out.println("Schedule completed successfully.");
+		for(Team team: this.teams) {
+			team.schedule.scheduleGames();
+		}
+		
 		return success;
 	}
 }

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import fileHandler.CSVHandler;
+import fileHandler.OOTPHandler;
 import fileHandler.SeriesParser;
 import scheduleBuilder.Builder;
 import scheduleBuilder.Event;
@@ -91,11 +93,11 @@ public class OOTPScheduleWriter {
 			}
 		}
 		for(;;) {
-			System.out.println("Please enter command (print/load/clear/check/schedule/help/quit): ");
+			System.out.println("Please enter command (print/series/clear/check/schedule/help/quit): ");
 			String command = scanner.nextLine();
 			if(command.equals("print")) {
 				printSeries(allSeries);
-			}else if(command.equals("load")) {
+			}else if(command.equals("series")) {
 				List<Event> newSeries;
 				if((newSeries=loadSeries(scanner))!=null) {
 					if(builder.assignSeries(newSeries)) {
@@ -130,7 +132,7 @@ public class OOTPScheduleWriter {
 					System.out.println("All gamesets are balanced.");
 				}
 			}else if(command.equals("schedule")) {
-				int maxRetries=Integer.MAX_VALUE;
+				int maxRetries=65536;
 				int printRetries=1;
 				int retries=0;
 				Boolean success=false;
@@ -146,20 +148,50 @@ public class OOTPScheduleWriter {
 				}
 				if(success) {
 					System.out.println("Schedule built successfully ("+retries+" attempts).");
+					break;
 				}else {
 					System.err.println("Schedule build failed. Reached maximum attempts.");
 				}
 			}else if(command.equals("help")) {
 				System.out.println("print");
 				System.out.println("\tPrints out all scheduled series in a verbose but readable format.\r\n");
-				System.out.println("load");
+				System.out.println("series");
 				System.out.println("\tLoad more series from another file.\r\n\tLoading the same file will add a second copy of the series to the schedule.\r\n");
 				System.out.println("clear");
 				System.out.println("\tClears all loaded series.\r\n");
 				System.out.println("check");
 				System.out.println("\tChecks if each team plays a balanced schedule.\r\n");
 				System.out.println("schedule");
-				System.out.println("\tAttempts to print a schedule with the loaded Series.");
+				System.out.println("\tAttempts to print a schedule with the loaded Series.\r\n");
+				System.out.println("quit");
+				System.out.println("\tExits the program.\r\n");
+			}else if(command.equals("quit")) {
+				scanner.close();
+				return;
+			}else {
+				System.out.println("Please enter valid command.");
+			}
+		}
+		for(;;) {
+			System.out.println("Please enter command (write_ootp/write_csv/help/quit): ");
+			String command = scanner.nextLine();
+			if(command.equals("write_ootp")) {
+				OOTPHandler ootpHandler = new OOTPHandler();
+				ootpHandler.writeOOTP(divisions, scanner);
+			}else if(command.equals("write_csv")) {
+				CSVHandler csvHandler = new CSVHandler();
+				List<Team> allTeams = new ArrayList<>();
+				allTeams.addAll(east);
+				allTeams.addAll(central);
+				allTeams.addAll(west);
+				System.out.println("Please enter filename:");
+				String filename = scanner.nextLine();
+				csvHandler.writeCSV(allTeams, filename);
+			}else if(command.equals("help")) {
+				System.out.println("write_ootp");
+				System.out.println("\tWrites the schedule to a file in the format OOTP uses to generate its schedules.\r\n");
+				System.out.println("write_csv");
+				System.out.println("\tWrites the schedule to a readable .csv file. Can be reloaded via \"load\" after restarting this program (TODO)\r\n");
 				System.out.println("quit");
 				System.out.println("\tExits the program.\r\n");
 			}else if(command.equals("quit")) {
