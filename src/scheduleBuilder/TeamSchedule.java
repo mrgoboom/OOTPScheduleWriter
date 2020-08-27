@@ -11,8 +11,10 @@ public class TeamSchedule {
 	private List<Series> divisionSeries;
 	private List<Series> interdivisionSeries;
 	private List<Event> teamSchedule;
+	public List<Series>[] seriesVsTeam;
 	private int daysScheduled;
 	
+	@SuppressWarnings("unchecked")
 	public TeamSchedule(Team theTeam) {
 		this.events = new ArrayList<>();
 		this.homeSeries = new ArrayList<>();
@@ -22,6 +24,10 @@ public class TeamSchedule {
 		this.teamSchedule = new ArrayList<>();
 		this.team = theTeam;
 		this.daysScheduled=0;
+		this.seriesVsTeam = new List[Builder.numTeams];
+		for(int i=0;i<Builder.numTeams;i++) {
+			this.seriesVsTeam[i] = new ArrayList<>();
+		}
 	}
 	
 	public List<Event> getEvents(){
@@ -32,8 +38,32 @@ public class TeamSchedule {
 		return this.teamSchedule;
 	}
 	
+	public Series getLastSeries() {
+		for(int i=this.teamSchedule.size()-1;i>=0;i--) {
+			Event e = this.teamSchedule.get(i);
+			if(e instanceof Series) {
+				return (Series)e;
+			}
+		}
+		return null;
+	}
+	
+	public int mostSeriesRemaining(List<Team> fromList) {
+		if(fromList.size()<=0) {
+			return -1;
+		}
+		int teamID=fromList.get(0).id;
+		for(Team team: fromList) {
+			if(this.seriesVsTeam[team.id-1].size()<this.seriesVsTeam[teamID-1].size()) {
+				teamID=team.id;
+			}
+		}
+		return teamID;
+	}
+	
 	public void addSeries(Series s, Boolean isHome, Boolean isDivision) {
 		this.events.add(s);
+		this.seriesVsTeam[s.getOpponent(this.team).id-1].add(s);
 		if(isHome) {
 			this.homeSeries.add(s);
 		}else {
@@ -50,6 +80,7 @@ public class TeamSchedule {
 		this.events.add(offDay);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void clear() {
 		this.events = new ArrayList<>();
 		this.homeSeries = new ArrayList<>();
@@ -58,6 +89,10 @@ public class TeamSchedule {
 		this.interdivisionSeries = new ArrayList<>();
 		this.teamSchedule = new ArrayList<>();
 		this.daysScheduled=0;
+		this.seriesVsTeam = new List[Builder.numTeams];
+		for(int i=0;i<Builder.numTeams;i++) {
+			this.seriesVsTeam[i] = new ArrayList<>();
+		}
 	}
 	
 	public void shuffleAll() {
@@ -67,103 +102,55 @@ public class TeamSchedule {
 		Collections.shuffle(divisionSeries);
 		Collections.shuffle(interdivisionSeries);
 	}
-	
-	public OffDay grabBreak() {
-		for(int i=0;i<events.size();i++) {
-			Event test=events.get(i);
-			if(test instanceof OffDay) {
-				return (OffDay)test;
-			}
-		}
-		return null;
+
+	public Event getLastEvent() {
+		return this.teamSchedule.get(this.teamSchedule.size()-1);
 	}
 	
-	public Event grabValidEvent(int lengthReq) {
-		Event ratherNot=null;
-		for(int i=0;i<events.size();i++) {
-			Event test = events.get(i);
-			if(test instanceof OffDay) {
-				if((lengthReq==0||lengthReq==4)&&this.team.getLastSeriesVS()!=this.team) {
-					return test;
-				}
-			}else if(test instanceof Series){
-				Series s = (Series)test;
-				Team opponent = s.getOpponent(this.team);
-				if(opponent.schedule.getDaysScheduled()==this.daysScheduled) {
-					if(lengthReq==0||s.length()==lengthReq) {
-						if(opponent.scheduleAlert()!=1) {
-							return s;
-						}else {
-							ratherNot=s;
-						}
-					}
+	public void resetLastEvent() {
+		Event e = this.teamSchedule.get(this.teamSchedule.size()-1);
+		this.teamSchedule.remove(e);
+		this.daysScheduled -= e.length();
+		
+		if(e instanceof OffDay) {
+			addOffDay((OffDay)e);
+		}else {
+			addSeries((Series)e,e.homeTeam()==this.team, this.team.teamFromSameDivision(((Series)e).getOpponent(this.team)));
+		}
+		shuffleAll();
+	}
+	
+	public List<Event> remainingMatchups(List<Team> opponents) {
+		List<Event> fitMatchup = new ArrayList<>();
+		for(Event e:this.events) {
+			if(e instanceof Series) {
+				if(opponents.contains(((Series)e).getOpponent(this.team))&&((Series)e).getOpponent(this.team)!=this.team.getLastSeriesVS()) {
+					fitMatchup.add(e);
 				}
 			}else {
-				System.err.println("Found Unknown Event.");
-			}
-		}
-		if(ratherNot!=null) {
-			return ratherNot;
-		}
-		System.err.println("No valid events.");
-		return null;
-	}
-	
-	public Series grabValidSeries(int lengthReq) {
-		for(int i=0;i<events.size();i++) {
-			Event test = events.get(i);
-			if(test instanceof Series) {
-				Series s = (Series)test;
-				Team opponent = s.getOpponent(this.team);
-				if(opponent.schedule.getDaysScheduled()==this.daysScheduled&&this.team.getLastSeriesVS()!=opponent&&opponent.scheduleAlert()!=1) {
-					if(lengthReq==0||s.length()==lengthReq) {
-						return s;
-					}
+				if(this.team.getGamesWithoutBreak()!=0) {
+					fitMatchup.add(e);
 				}
 			}
 		}
-		return null;
+		return fitMatchup;
 	}
 	
-	public Series grabInterdivisionSeriesVS(List<Team> valid) {
-		for(int i=0;i<this.interdivisionSeries.size();i++) {
-			Series test = this.interdivisionSeries.get(i);
-			if(valid.contains(test.getOpponent(this.team))) {
-				return test;
+	public void scheduleGames() {
+		int day = 1;
+		for(int i=0;i<this.teamSchedule.size();i++) {
+			Event event = this.teamSchedule.get(i);
+			if(event.isHome(this.team)) {
+				event.schedule(day);
 			}
+			day += event.length();
 		}
-		return null;
 	}
 	
-	public Series grabDivisionSeriesVS(List<Team> valid) {
-		for(int i=0;i<this.divisionSeries.size();i++) {
-			Series test = this.divisionSeries.get(i);
-			if(valid.contains(test.getOpponent(this.team))) {
-				return test;
-			}
-		}
-		return null;
-	}
-	
-	public Series grabHomeSeriesVS(List<Team> valid, int lengthReq) {
-		for(int i=0;i<this.homeSeries.size();i++) {
-			Series test = this.homeSeries.get(i);
-			if(valid.contains(test.getOpponent(this.team))) {
-				if(lengthReq != 0 || test.length()==lengthReq) {
-						return test;
-				}
-			}
-		}
-		return null;
-	}
-	
-	public Series grabAwaySeriesVS(List<Team> valid, int lengthReq) {
-		for(int i=0;i<this.awaySeries.size();i++) {
-			Series test = this.awaySeries.get(i);
-			if(valid.contains(test.getOpponent(this.team))) {
-				if(lengthReq != 0 || test.length()==lengthReq) {
-					return test;
-				}
+	public Event getEventByDay(int day) {
+		for(Event event: this.teamSchedule) {
+			if(event.coversDay(day)) {
+				return event;
 			}
 		}
 		return null;
@@ -175,6 +162,7 @@ public class TeamSchedule {
 		
 		this.events.remove(e);
 		if(e instanceof Series) {
+			this.seriesVsTeam[((Series)e).getOpponent(this.team).id-1].remove(e);
 			this.homeSeries.remove(e);
 			this.awaySeries.remove(e);
 			this.interdivisionSeries.remove(e);
@@ -215,6 +203,14 @@ public class TeamSchedule {
 		}
 		for (Series s:this.awaySeries) {
 			totalGames+=s.games();
+		}
+		return totalGames;
+	}
+	
+	public int postScheduleGameCount() {
+		int totalGames=0;
+		for (Event e:this.teamSchedule) {
+			totalGames+=e.games();
 		}
 		return totalGames;
 	}
