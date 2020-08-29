@@ -133,7 +133,7 @@ public class OOTPScheduleWriter {
 				}
 			}else if(command.equals("schedule")) {
 				int maxRetries=65536;
-				int printRetries=1;
+				int printRetries=2500;
 				int retries=0;
 				Boolean success=false;
 				while(!(success=builder.schedule())) {
@@ -143,7 +143,7 @@ public class OOTPScheduleWriter {
 					}
 					if(retries>=printRetries) {
 						System.out.println("Schedule build failed (Count: "+retries+"). Retrying...");
-						printRetries*=2;
+						printRetries+=2500;
 					}
 				}
 				if(success) {

@@ -23,7 +23,7 @@ public class Team {
 		this.schedule = new TeamSchedule(this);
 		Team.teams.add(this);
 		this.id = Team.teams.size();
-		this.restDays=22;
+		this.restDays=23;
 	}
 	
 	public Team getLastSeriesVS() {
@@ -57,7 +57,7 @@ public class Team {
 		this.gamesWithoutBreak=-1;
 		this.lastSeriesVS=null;
 		this.schedule.clear();
-		this.restDays=22;
+		this.restDays=23;
 	}
 	
 	public String areSeriesBalanced() {

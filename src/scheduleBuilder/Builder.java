@@ -8,11 +8,13 @@ public class Builder {
 	private final List<List<Team>> divisions;
 	private final List<Team> teams;
 	public static final int numTeams = 14;
-	public static final int totalDays=181;
+	public static final int totalDays=182;
 	public static final int allStarBreakStart=95;
 	private final int allStarBreakLen=3;
 	private DayOfWeek weekDay;
 	private int furthestProgress;
+	private double day150Avg;
+	private int day150Count;
 	
 	public Builder(List<List<Team>> structure) {
 		this.divisions=structure;
@@ -24,6 +26,8 @@ public class Builder {
 		}
 		Collections.shuffle(this.teams);
 		this.furthestProgress=-1;
+		this.day150Avg = 0;
+		this.day150Count = 0;
 		this.weekDay=DayOfWeek.THURSDAY;
 	}
 	
@@ -136,8 +140,10 @@ public class Builder {
 			switch(this.weekDay) {
 			case MONDAY:
 			case THURSDAY:
-			case FRIDAY:
 				desiredLength=new int[] {4};
+				break;
+			case FRIDAY:
+				desiredLength=new int[] {3};
 				break;
 			case TUESDAY:
 			case SATURDAY:
@@ -449,13 +455,13 @@ public class Builder {
 		List<Priority> priorities = new ArrayList<>();
 		priorities.add(Priority.LENGTH);
 		priorities.add(Priority.ALERT);
+		priorities.add(Priority.SHOULD_REST);
 		priorities.add(Priority.SERIES_EXISTS);
 		priorities.add(Priority.DIVISION);
-		priorities.add(Priority.PREFERRED_LENGTH);
 		while(scheduleDay<30) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
-				priorities.add(2, Priority.SERIES);
+				priorities.add(3, Priority.SERIES);
 			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
@@ -493,11 +499,12 @@ public class Builder {
 		}
 		//Until 5 days before all-star break
 		priorities.remove(Priority.DIVISION);
-		priorities.add(4,Priority.INTERDIVISION);
+		priorities.add(5,Priority.INTERDIVISION);
+		priorities.add(Priority.PREFERRED_LENGTH);
 		while(scheduleDay<Builder.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
-				priorities.add(2, Priority.SERIES);
+				priorities.add(3, Priority.SERIES);
 			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
@@ -536,6 +543,7 @@ public class Builder {
 		
 		//4-5 days before all-star break use this to avoid offday final day
 		priorities.remove(Priority.INTERDIVISION);
+		priorities.remove(Priority.SHOULD_REST);
 		while(scheduleDay<Builder.allStarBreakStart-(Series.getMaxSeriesLen()-1)) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
@@ -658,16 +666,19 @@ public class Builder {
 		}
 		
 		
-		//To last 30 days
+		//To last 30 days of season
 		priorities.remove(Priority.LENGTH_FORCE);
 		priorities.add(0, Priority.LENGTH);
+		priorities.add(2,Priority.SHOULD_REST);
 		priorities.add(Priority.INTERDIVISION);
 		priorities.add(Priority.PREFERRED_LENGTH);
 		while(scheduleDay<(Builder.totalDays)) {
-
+			if(scheduleDay==Builder.totalDays-30) {
+				priorities.remove(Priority.INTERDIVISION);
+			}
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
-				priorities.add(2, Priority.SERIES);
+				priorities.add(3, Priority.SERIES);
 			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
@@ -675,7 +686,7 @@ public class Builder {
 				this.weekDay=this.weekDay.next();
 				continue;
 			}
-			if(scheduleDay>170) {
+			if(scheduleDay>174) {
 				System.out.println("Day "+scheduleDay+"!");
 			}
 			//System.out.println("There are "+toSchedule.size()+" teams waiting to be scheduled on day "+scheduleDay);
@@ -693,6 +704,14 @@ public class Builder {
 			}else {
 				success&=walkBack(toSchedule);
 				if(!success) {
+					if(scheduleDay>=150) {
+						double diff = ((double)scheduleDay)-this.day150Avg;
+						this.day150Count++;
+						this.day150Avg+=diff/((double)this.day150Count);
+						if(this.day150Count%250==0) {
+							System.out.println("Have failed after day 150 "+this.day150Count+" times. (Average fail day: "+this.day150Avg+").");
+						}
+					}
 					if(scheduleDay>this.furthestProgress) {
 						this.furthestProgress=scheduleDay;
 						System.out.println("New record! Failed at day "+scheduleDay);
@@ -705,6 +724,14 @@ public class Builder {
 			if(!success) {
 				success|=walkBack(toSchedule);
 				if(!success) {
+					if(scheduleDay>=150) {
+						double diff = ((double)scheduleDay)-this.day150Avg;
+						this.day150Count++;
+						this.day150Avg+=diff/((double)this.day150Count);
+						if(this.day150Count%250==0) {
+							System.out.println("Have failed after day 150 "+this.day150Count+" times. (Average fail day: "+this.day150Avg+").");
+						}
+					}
 					if(scheduleDay>this.furthestProgress) {
 						this.furthestProgress=scheduleDay;
 						System.out.println("New record! Failed at day "+scheduleDay);

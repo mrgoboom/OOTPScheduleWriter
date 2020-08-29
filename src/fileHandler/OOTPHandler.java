@@ -65,7 +65,7 @@ public class OOTPHandler {
 		}else {
 			filename+="N_G";
 		}
-		filename+=Builder.totalDays+"_SL1_";
+		filename+=games+"_SL1_";
 		for(int i=1;i<=divisions.size();i++) {
 			filename+="D"+i+"_T"+divisions.get(i-1).size()+"_";
 		}

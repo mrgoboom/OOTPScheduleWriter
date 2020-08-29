@@ -16,7 +16,7 @@ public class TeamPair {
 		if(t1!=t2) {
 			this.count=1;
 		}else {
-			this.count=0.28;
+			this.count=0.087;
 		}
 	}
 	
@@ -25,7 +25,7 @@ public class TeamPair {
 		for(TeamPair tp:TeamPair.thePairs) {
 			if(test.equals(tp)) {
 				if(tp.team1==tp.team2) {
-					tp.count+=0.28;
+					tp.count+=0.087;
 				}else {
 					tp.count+=1;
 				}

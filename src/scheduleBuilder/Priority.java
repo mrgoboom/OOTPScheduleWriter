@@ -11,6 +11,7 @@ public enum Priority implements Cloneable {
 	SERIES,
 	LENGTH,
 	PREFERRED_LENGTH,
+	SHOULD_REST,
 	LENGTH_FORCE;
 		
 	public Boolean matchesPriority(Event event, List<Team> division, Team team, int[] length) {
@@ -61,6 +62,14 @@ public enum Priority implements Cloneable {
 				}
 			}
 			return false;
+		case SHOULD_REST:
+			double restTarget = ((double)Builder.totalDays)/23.0;
+			double restValue = ((double)(Builder.totalDays-team.schedule.getDaysScheduled()))/(double)team.restDays;
+			if(event instanceof OffDay) {
+				return restValue<(restTarget*1.2);
+			}else {
+				return restValue>(restTarget*0.8);
+			}
 		default:
 			return false;
 		}
