@@ -12,12 +12,14 @@ public class Team {
 	private int consecutiveHomeGames;
 	private int consecutiveAwayGames;
 	private int gamesWithoutBreak;
+	public boolean lastSeriesDoubleHeader;
 	public int restDays;
 	private Team lastSeriesVS;
 	
 	public Team () {
 		this.consecutiveHomeGames=0;
 		this.consecutiveAwayGames=0;
+		this.lastSeriesDoubleHeader=true;
 		this.gamesWithoutBreak=-1;
 		this.lastSeriesVS=null;
 		this.schedule = new TeamSchedule(this);
@@ -58,6 +60,7 @@ public class Team {
 		this.lastSeriesVS=null;
 		this.schedule.clear();
 		this.restDays=23;
+		this.lastSeriesDoubleHeader=true;
 	}
 	
 	public String areSeriesBalanced() {
@@ -88,6 +91,11 @@ public class Team {
 			this.gamesWithoutBreak = gamesSinceBreak;
 		}else {
 			this.gamesWithoutBreak -= e.games();
+			Event last = theSchedule.get(theSchedule.size()-2);
+			if (last instanceof OffDay) {
+				last = theSchedule.get(theSchedule.size()-3);
+			}
+			lastSeriesDoubleHeader=((Series)last).hasDoubleHeader();
 			if(e.homeTeam()==this) {
 				this.consecutiveHomeGames -= e.games();
 				if(this.consecutiveHomeGames==0) {
@@ -150,6 +158,7 @@ public class Team {
 				return;
 			}
 			this.lastSeriesVS=s.getOpponent(this);
+			this.lastSeriesDoubleHeader = s.hasDoubleHeader();
 		}else if(event instanceof OffDay){
 			this.gamesWithoutBreak=0;
 			if(event.length()==1) {
@@ -163,20 +172,28 @@ public class Team {
 	}
 	
 	/*
-	 * Returns 1 if need Break
-	 * Returns 2 if need HomeSeries
-	 * Returns 3 if need AwaySeries
+	 * Supports multiple alerts.
+	 * +1 if need Break
+	 * +2 if need HomeSeries
+	 * +4 if need AwaySeries
+	 * +8 if no doubleheaders
 	 * Else returns 0
 	 */
 	public int scheduleAlert() {
+		int retVal=0;
 		if (this.gamesWithoutBreak > Team.maxConsecutive-Series.getMaxSeriesLen()) {
-			return 1;
-		}else if(this.consecutiveHomeGames > Team.maxStand-Series.getMaxSeriesLen()) {
-			return 3;
-		}else if(this.consecutiveAwayGames > Team.maxStand-Series.getMaxSeriesLen()) {
-			return 2;
+			retVal+=1;
 		}
-		return 0;
+		if(this.consecutiveHomeGames > Team.maxStand-Series.getMaxSeriesLen()) {
+			retVal+=2;
+		}else if(this.consecutiveAwayGames > Team.maxStand-Series.getMaxSeriesLen()) {
+			retVal+=4;
+		}
+		if(this.lastSeriesDoubleHeader) {
+			retVal+=8;
+		}
+		
+		return retVal;
 	}
 	
 	public String toString() {

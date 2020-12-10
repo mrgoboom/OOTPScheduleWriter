@@ -9,5 +9,5 @@ public interface Event {
 	public Boolean isHome(Team t);
 	public void schedule(int day);
 	public String csvString(Team t, int day);
-	public String ootpString(int day);
+	public String ootpString(int day, Boolean duplicate);
 }

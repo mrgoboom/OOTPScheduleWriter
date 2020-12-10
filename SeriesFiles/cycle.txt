@@ -1,0 +1,118 @@
+West Division Cycle
+> plays 21 games and is home for the extra
+< plays 21 games and is away for the extra
+= plays 20 games
+a
+1=2 
+1>3 2<3
+1<4 2>4 3=4
+b
+1>2
+1<3 2=3
+1=4 2>4 3<4
+c
+1<2
+1=3 2<3
+1>4 2=4 3<4
+d
+1=2
+1<3 2>3
+1>4 2<4 3=4
+e
+1<2
+1>3 2=3
+1=4 2<4 3>4
+f
+1>2
+1=3 2>3
+1<4 2=4 3>4
+
+East/Central doubleheader (DH) cycle
+> plays DH at home
+< plays DH on road
+a
+1>2
+1>3 2>3
+1<4 2>4 3>4
+1<5 2<5 3>5 4>5
+b
+1<2
+1<3 2<3
+1>4 2<4 3<4
+1>5 2>5 3<5 4<5
+
+West DH cycle *Could use expansion but reasonably balanced
+> plays DH at home
+< plays DH on road
+= plays 2 DH against, 1 home, 1 road
++ will get an extra interdivisional DH on the road
+- will get an extra interdivisional DH at home
+a
+1>2
+1>3 2<3
+1<4 2>4 3=4
+1+  2-
+b
+1<2
+1>3 2>3
+1=4 2<4 3>4
+2+  3-
+c
+1>2
+1<3 2=3
+1<4 2>4 3<4
+1-  4+
+d
+1=2
+1<3 2>3
+1>4 2<4 3>4
+3+  4-
+
+Interdivision Cycle *Needs expansion to balance for DH and variety
+> column is home for 6 of 10 games against
+< column is away for 6 of 10 games against
+= column is home for 5 of 10 games against
++ DH column is home
+- DH column is away
+Divisions are
+East: 1-5
+Central: 6-10
+West: 11-14
+a
+   6  7  8  9 10 11 12 13 14 
+1  =  > +>  <  < ->  <  =  =
+2  <  =  > +>  <  =  > -<  =
+3  =  =  =  < +>  > -<  >  <
+4 -=  =  <  =  > +<  >  <  >
+5  > -<  <  >  =  < +=  >  =
+6                 > -<  >  <
+7                 <  >  < ->
+8                 =  = +>  <
+9                 <  =  = +>
+10               +>  =  <  =
+
+b
+   6  7  8  9 10 11 12 13 14
+1  = +<  <  >  >  <  > -=  =
+2 +>  =  <  <  >  = -<  >  =
+3  =  =  = ->  < +<  >  <  >
+4  =  = ->  =  <  > +<  >  <
+5  <  >  >  < -=  >  =  < +=
+6                 <  > +<  >
+7                 > +<  >  <
+8                 =  =  < ->
+9                ->  =  =  <
+10                <  = ->  =
+
+
+Interdivision DH matchup checklist
+1v6		1v7	b	1v8	a	1v9		1v10	1v11 a	1v12 	1v13 b	1v14
+2v6	b	2v7		2v8		2v9	a	2v10	2v11 	2v12 b	2v13 a	2v14 
+3v6		3v7		3v8		3v9	b	3v10 a	3v11 b	3v12 a	3v13 	3v14
+4v6	a	4v7		4v8	b	4v9		4v10 	4v11 a	4v12 b	4v13 	4v14
+5v6		5v7	a	5v8		5v9		5v10 b	5v11	5v12 a	5v13	5v14 b
+										6v11	6v12 a	6v13 b	6v14
+										7v11	7v12 b	7v13	7v14 a
+										8v11	8v12	8v13 a	8v14 b
+										9v11 b	9v12	9v13	9v14 a
+										10v11 a	10v12	10v13 b	10v14 

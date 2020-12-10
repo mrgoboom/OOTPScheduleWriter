@@ -47,7 +47,7 @@ public class OffDay implements Event {
 		return "Off";
 	}
 	
-	public String ootpString(int day) {
+	public String ootpString(int day, Boolean duplicate) {
 		return "";
 	}
 }

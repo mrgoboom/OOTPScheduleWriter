@@ -236,7 +236,7 @@ public class Builder {
 	
 	private Event restDay(Team team, List<Event> toSearch) {
 		for(Event event:toSearch) {
-			if(event.homeTeam()==team&&event instanceof OffDay) {
+			if(event.homeTeam()==team&&event instanceof OffDay&&!(team.schedule.getLastEvent() instanceof OffDay)) {
 				return event;
 			}
 		}
@@ -294,6 +294,7 @@ public class Builder {
 		List<Priority> matchDay = new ArrayList<>();
 		matchDay.add(Priority.CATCHUP);
 		matchDay.add(Priority.ALERT);
+		matchDay.add(Priority.SHOULD_REST);
 		while(scheduleDay<issueDay) {
 			List<Team> toSchedule = getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {

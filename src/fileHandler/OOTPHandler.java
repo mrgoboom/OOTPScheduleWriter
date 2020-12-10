@@ -50,24 +50,29 @@ public class OOTPHandler {
 		System.out.println("Please write a short comment (no spaces)");
 		String comment = scanner.nextLine();
 		//TODO: Handle possibility of interleague properly. Allow for alternative settings.
+		//TODO: Handle one league possibility
 		int startMonth=4;
 		int startDay=1;
 		int startDayOfWeek=5;
 		int games=divisions.get(0).get(0).schedule.postScheduleGameCount();
 		String filename="IL";
 		if(interleague) {
-			filename+="N_BG";
-		}else {
 			filename+="Y_BG";
+		}else {
+			filename+="N_BG";
 		}
 		if(balancedGames) {
 			filename+="Y_G";
 		}else {
 			filename+="N_G";
 		}
-		filename+=games+"_SL1_";
+		filename+=games+"_SL1_D"+divisions.size()+"_";
 		for(int i=1;i<=divisions.size();i++) {
-			filename+="D"+i+"_T"+divisions.get(i-1).size()+"_";
+			filename+="T"+divisions.get(i-1).size()+"_";
+		}
+		filename+="SL2_D"+divisions.size()+"_";
+		for(int i=1;i<=divisions.size();i++) {
+			filename+="T"+divisions.get(i-1).size()+"_";
 		}
 		filename+="C_";
 		String scheduleLine="<SCHEDULE type=\""+filename+"\" inter_league=\"";
@@ -82,7 +87,7 @@ public class OOTPHandler {
 		}else {
 			scheduleLine+="0";
 		}
-		scheduleLine+="\" games_per_team=\""+games+"\" start_month=\""+startMonth+"\" start_day=\""+startDay+"\" start_day_of_week=\""+startDayOfWeek+"\" allstar_game_day=\""+(Builder.allStarBreakStart+1)+"\">\r\n";
+		scheduleLine+="\" games_per_team=\""+games+"\" start_month=\""+startMonth+"\" start_day=\""+startDay+"\" start_day_of_week=\""+startDayOfWeek+"\" allstar_game_day=\""+(Builder.allStarBreakStart+2)+"\">\r\n";
 		try {
 			File file = new File(filename);
 			file.createNewFile();
@@ -97,7 +102,7 @@ public class OOTPHandler {
 					for(Team team:division) {
 						Event event = team.schedule.getEventByDay(i);
 						if(event instanceof Series && event.isHome(team)) {
-							String gameLine = event.ootpString(i);
+							String gameLine = event.ootpString(i,true);
 							writer.write(gameLine);
 						}
 					}

@@ -77,6 +77,10 @@ public class Series implements Event{
 		return this.games;
 	}
 	
+	public boolean hasDoubleHeader() {
+		return this.length!=this.games;
+	}
+	
 	public static int getMaxSeriesLen() {
 		return Series.MaxSeriesLen;
 	}
@@ -124,7 +128,7 @@ public class Series implements Event{
 		return csvString;
 	}
 	
-	public String ootpString(int day) {
+	public String ootpString(int day, Boolean duplicate) {
 		DayOfWeek weekDay = DayOfWeek.THURSDAY;
 		weekDay = weekDay.advanceDays(day-1);
 		int gameDay=day-this.startDay;
@@ -145,26 +149,38 @@ public class Series implements Event{
 					startTime-=300;
 				}
 			}
-			return "<Game day=\""+day+"\" time=\""+startTime+"\" away=\""+this.awayTeam.id+"\" home=\""+this.homeTeam.id+"\" />\r\n";
+			if(startTime<1305) {
+				startTime=1305;
+			}
+			String games="<Game day=\""+day+"\" time=\""+startTime+"\" away=\""+this.awayTeam.id+"\" home=\""+this.homeTeam.id+"\" />\r\n";
+			if(duplicate) {
+				games+="<Game day=\""+day+"\" time=\""+startTime+"\" away=\""+(this.awayTeam.id+14)+"\" home=\""+(this.homeTeam.id+14)+"\" />\r\n";
+			}
+			return games;
 		}else if(this.gamesOnDay[gameDay]==0) {
 			return "";
 		}else {
 			Random generator = new Random();
-			int startTime=1005;
+			int startTime=1535;
 			int threshHold=2;
-			if(!weekDay.isWeekend()) {
-				threshHold+=14;
+			if(weekDay.isWeekend()) {
+				threshHold+=18;
 			}
 			if(gameDay!=this.length-1) {
 				threshHold+=4;
 			}
 			if(Math.abs(generator.nextInt())%24<threshHold) {
-				startTime+=300;
+				startTime-=300;
 			}
-			String game1 = "<Game day=\""+day+"\" time=\""+startTime+"\" away=\""+this.awayTeam.id+"\" home=\""+this.homeTeam.id+"\" />\r\n";
-			startTime+=400;
-			String game2 = "<Game day=\""+day+"\" time=\""+startTime+"\" away=\""+this.awayTeam.id+"\" home=\""+this.homeTeam.id+"\" />\r\n";
-			return game1+game2;
+			String games="";
+			for(int i=0;i<gamesOnDay[gameDay];i++) {
+				games+="<Game day=\""+day+"\" time=\""+startTime+"\" away=\""+this.awayTeam.id+"\" home=\""+this.homeTeam.id+"\" />\r\n";
+				if(duplicate) {
+					games+="<Game day=\""+day+"\" time=\""+startTime+"\" away=\""+(this.awayTeam.id+14)+"\" home=\""+(this.homeTeam.id+14)+"\" />\r\n";
+				}
+				startTime+=370;
+			}
+			return games;
 		}
 	}
 }

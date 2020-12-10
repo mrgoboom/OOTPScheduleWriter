@@ -18,19 +18,23 @@ public enum Priority implements Cloneable {
 		switch(this) {
 		case ALERT:
 			int alert = team.scheduleAlert();
+			int opponentAlert=0;
 			if(event instanceof Series) {
-				alert |= ((Series)event).getOpponent(team).scheduleAlert();
+				opponentAlert = ((Series)event).getOpponent(team).scheduleAlert();
 			}
-			switch(alert) {
-			case 1:
+			if((alert|opponentAlert)%2==1) {
 				return event instanceof OffDay;
-			case 2:
-				return (event instanceof OffDay)||((Series)event).isHome(team);
-			case 3:
-				return (event instanceof OffDay)||((Series)event).isAway(team);
-			default:
-				return true;
 			}
+			boolean retBool=true;
+			if((alert>>1)%2==1||(opponentAlert>>2)%2==1) {
+				retBool&=(event instanceof OffDay)||((Series)event).isHome(team);
+			}else if((alert>>2)%2==1||(opponentAlert>>1)%2==1) {
+				retBool&=(event instanceof OffDay)||((Series)event).isAway(team);
+			}
+			if(((alert>>3)|(opponentAlert>>3))%2==1) {
+				retBool&=(event instanceof OffDay)||!((Series)event).hasDoubleHeader();
+			}
+			return retBool;
 		case CATCHUP:
 			for(int len:length) {
 				if(event.length()==len) {
@@ -66,9 +70,9 @@ public enum Priority implements Cloneable {
 			double restTarget = ((double)Builder.totalDays)/23.0;
 			double restValue = ((double)(Builder.totalDays-team.schedule.getDaysScheduled()))/(double)team.restDays;
 			if(event instanceof OffDay) {
-				return restValue<(restTarget*1.2);
+				return restValue<(restTarget*1.1);
 			}else {
-				return restValue>(restTarget*0.8);
+				return restValue>(restTarget*0.9);
 			}
 		default:
 			return false;
