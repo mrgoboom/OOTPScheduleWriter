@@ -200,8 +200,8 @@ public class Team {
 	/*
 	 * Supports multiple alerts.
 	 * +1 if need Break
-	 * +2 if need HomeSeries
-	 * +4 if need AwaySeries
+	 * +2 if need AwaySeries
+	 * +4 if need HomeSeries
 	 * +8 if no doubleheaders
 	 * Else returns 0
 	 */

@@ -29,9 +29,9 @@ public enum Priority implements Cloneable {
 			}
 			boolean retBool=true;
 			if((alert>>1)%2==1||(opponentAlert>>2)%2==1) {
-				retBool&=(event instanceof OffDay)||((Series)event).isHome(team);
-			}else if((alert>>2)%2==1||(opponentAlert>>1)%2==1) {
 				retBool&=(event instanceof OffDay)||((Series)event).isAway(team);
+			}else if((alert>>2)%2==1||(opponentAlert>>1)%2==1) {
+				retBool&=(event instanceof OffDay)||((Series)event).isHome(team);
 			}
 			if(((alert>>3)|(opponentAlert>>3))%2==1) {
 				retBool&=(event instanceof OffDay)||!((Series)event).hasDoubleHeader();
