@@ -11,6 +11,7 @@ public enum Priority implements Cloneable {
 	SERIES,
 	LENGTH,
 	PREFERRED_LENGTH,
+	FRESH_OPPONENT,
 	SHOULD_REST,
 	LENGTH_FORCE;
 		
@@ -74,6 +75,8 @@ public enum Priority implements Cloneable {
 			}else {
 				return restValue>(restTarget*0.9);
 			}
+		case FRESH_OPPONENT:
+			return (event instanceof OffDay)||!team.recentOpponent(((Series)event).getOpponent(team));
 		default:
 			return false;
 		}

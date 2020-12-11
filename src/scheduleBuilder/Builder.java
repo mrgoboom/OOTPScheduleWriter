@@ -456,13 +456,14 @@ public class Builder {
 		List<Priority> priorities = new ArrayList<>();
 		priorities.add(Priority.LENGTH);
 		priorities.add(Priority.ALERT);
+		priorities.add(Priority.FRESH_OPPONENT);
 		priorities.add(Priority.SHOULD_REST);
 		priorities.add(Priority.SERIES_EXISTS);
 		priorities.add(Priority.DIVISION);
 		while(scheduleDay<30) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
-				priorities.add(3, Priority.SERIES);
+				priorities.add(4, Priority.SERIES);
 			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
@@ -500,12 +501,12 @@ public class Builder {
 		}
 		//Until 5 days before all-star break
 		priorities.remove(Priority.DIVISION);
-		priorities.add(5,Priority.INTERDIVISION);
+		priorities.add(6,Priority.INTERDIVISION);
 		priorities.add(Priority.PREFERRED_LENGTH);
 		while(scheduleDay<Builder.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
-				priorities.add(3, Priority.SERIES);
+				priorities.add(4, Priority.SERIES);
 			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
@@ -548,7 +549,7 @@ public class Builder {
 		while(scheduleDay<Builder.allStarBreakStart-(Series.getMaxSeriesLen()-1)) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
-				priorities.add(2, Priority.SERIES);
+				priorities.add(3, Priority.SERIES);
 			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
@@ -592,7 +593,7 @@ public class Builder {
 		while(scheduleDay<Builder.allStarBreakStart-1) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
-				priorities.add(2, Priority.SERIES);
+				priorities.add(3, Priority.SERIES);
 			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {
@@ -670,7 +671,7 @@ public class Builder {
 		//To last 30 days of season
 		priorities.remove(Priority.LENGTH_FORCE);
 		priorities.add(0, Priority.LENGTH);
-		priorities.add(2,Priority.SHOULD_REST);
+		priorities.add(3,Priority.SHOULD_REST);
 		priorities.add(Priority.INTERDIVISION);
 		priorities.add(Priority.PREFERRED_LENGTH);
 		while(scheduleDay<(Builder.totalDays)) {
@@ -679,7 +680,7 @@ public class Builder {
 			}
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
-				priorities.add(3, Priority.SERIES);
+				priorities.add(4, Priority.SERIES);
 			}
 			List<Team> toSchedule=getWaiting(scheduleDay);
 			if(toSchedule.size()==0) {

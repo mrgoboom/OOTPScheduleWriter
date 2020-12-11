@@ -15,6 +15,7 @@ public class Team {
 	public boolean lastSeriesDoubleHeader;
 	public int restDays;
 	private Team lastSeriesVS;
+	private Team last2SeriesVS;
 	
 	public Team () {
 		this.consecutiveHomeGames=0;
@@ -22,6 +23,7 @@ public class Team {
 		this.lastSeriesDoubleHeader=true;
 		this.gamesWithoutBreak=-1;
 		this.lastSeriesVS=null;
+		this.last2SeriesVS=null;
 		this.schedule = new TeamSchedule(this);
 		Team.teams.add(this);
 		this.id = Team.teams.size();
@@ -30,6 +32,10 @@ public class Team {
 	
 	public Team getLastSeriesVS() {
 		return this.lastSeriesVS;
+	}
+	
+	public boolean recentOpponent(Team other) {
+		return this.last2SeriesVS==other||this.lastSeriesVS==other;
 	}
 	
 	public int getGamesWithoutBreak() {
@@ -58,6 +64,7 @@ public class Team {
 		this.consecutiveAwayGames=0;
 		this.gamesWithoutBreak=-1;
 		this.lastSeriesVS=null;
+		this.last2SeriesVS=null;
 		this.schedule.clear();
 		this.restDays=23;
 		this.lastSeriesDoubleHeader=true;
@@ -91,9 +98,12 @@ public class Team {
 			this.gamesWithoutBreak = gamesSinceBreak;
 		}else {
 			this.gamesWithoutBreak -= e.games();
+			
 			Event last = theSchedule.get(theSchedule.size()-2);
-			if (last instanceof OffDay) {
-				last = theSchedule.get(theSchedule.size()-3);
+			int offSet=3;
+			while (last instanceof OffDay) {
+				last = theSchedule.get(theSchedule.size()-offSet);
+				offSet++;
 			}
 			lastSeriesDoubleHeader=((Series)last).hasDoubleHeader();
 			if(e.homeTeam()==this) {
@@ -132,6 +142,11 @@ public class Team {
 		}else {
 			this.lastSeriesVS=this.schedule.getLastSeries().getOpponent(this);
 		}
+		if(this.schedule.getLast2Series()==null) {
+			this.last2SeriesVS=null;
+		}else {
+			this.last2SeriesVS=this.schedule.getLast2Series().getOpponent(this);
+		}
 	}
 	
 	public Boolean teamFromSameDivision(Team other) {
@@ -157,6 +172,7 @@ public class Team {
 				System.err.println("Tried to schedule event for team that is neither home nor away.");
 				return;
 			}
+			this.last2SeriesVS=this.lastSeriesVS;
 			this.lastSeriesVS=s.getOpponent(this);
 			this.lastSeriesDoubleHeader = s.hasDoubleHeader();
 		}else if(event instanceof OffDay){

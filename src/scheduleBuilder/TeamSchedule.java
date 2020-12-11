@@ -48,6 +48,21 @@ public class TeamSchedule {
 		return null;
 	}
 	
+	public Series getLast2Series() {
+		boolean found1=false;
+		for(int i=this.teamSchedule.size()-1;i>=0;i--) {
+			Event e = this.teamSchedule.get(i);
+			if(e instanceof Series) {
+				if(found1) {
+					return (Series)e;
+				}else {
+					found1=true;
+				}
+			}
+		}
+		return null;
+	}
+	
 	public int mostSeriesRemaining(List<Team> fromList) {
 		if(fromList.size()<=0) {
 			return -1;
