@@ -5,6 +5,7 @@ import java.util.List;
 public enum Priority implements Cloneable {
 	DIVISION,
 	INTERDIVISION,
+	DOUBLEHEADER,
 	ALERT,
 	CATCHUP,
 	SERIES_EXISTS,
@@ -77,6 +78,13 @@ public enum Priority implements Cloneable {
 			}
 		case FRESH_OPPONENT:
 			return (event instanceof OffDay)||!team.recentOpponent(((Series)event).getOpponent(team));
+		case DOUBLEHEADER:
+			final int dhThreshold=6;
+			if((event instanceof OffDay)||(team.seriesSinceDoubleHeader()<dhThreshold&&((Series)event).getOpponent(team).seriesSinceDoubleHeader()<dhThreshold)) {
+				return true;
+			}else {
+				return ((Series)event).hasDoubleHeader();
+			}
 		default:
 			return false;
 		}

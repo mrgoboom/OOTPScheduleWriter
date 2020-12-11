@@ -459,7 +459,9 @@ public class Builder {
 		priorities.add(Priority.FRESH_OPPONENT);
 		priorities.add(Priority.SHOULD_REST);
 		priorities.add(Priority.SERIES_EXISTS);
+		priorities.add(Priority.DOUBLEHEADER);
 		priorities.add(Priority.DIVISION);
+		priorities.add(Priority.PREFERRED_LENGTH);
 		while(scheduleDay<30) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {
@@ -501,8 +503,8 @@ public class Builder {
 		}
 		//Until 5 days before all-star break
 		priorities.remove(Priority.DIVISION);
-		priorities.add(6,Priority.INTERDIVISION);
-		priorities.add(Priority.PREFERRED_LENGTH);
+		priorities.add(7,Priority.INTERDIVISION);
+		//priorities.add(Priority.PREFERRED_LENGTH);
 		while(scheduleDay<Builder.allStarBreakStart-(Series.getMaxSeriesLen()+1)) {
 			priorities.remove(Priority.SERIES);
 			if(!this.weekDay.isRestDay()) {

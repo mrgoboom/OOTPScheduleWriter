@@ -12,7 +12,8 @@ public class Team {
 	private int consecutiveHomeGames;
 	private int consecutiveAwayGames;
 	private int gamesWithoutBreak;
-	public boolean lastSeriesDoubleHeader;
+	private int seriesSinceDoubleHeader;
+	private int lastSeriesSinceDoubleHeader;
 	public int restDays;
 	private Team lastSeriesVS;
 	private Team last2SeriesVS;
@@ -20,7 +21,8 @@ public class Team {
 	public Team () {
 		this.consecutiveHomeGames=0;
 		this.consecutiveAwayGames=0;
-		this.lastSeriesDoubleHeader=true;
+		this.seriesSinceDoubleHeader=0;
+		this.lastSeriesSinceDoubleHeader=0;
 		this.gamesWithoutBreak=-1;
 		this.lastSeriesVS=null;
 		this.last2SeriesVS=null;
@@ -28,6 +30,10 @@ public class Team {
 		Team.teams.add(this);
 		this.id = Team.teams.size();
 		this.restDays=23;
+	}
+	
+	public int seriesSinceDoubleHeader() {
+		return this.seriesSinceDoubleHeader;
 	}
 	
 	public Team getLastSeriesVS() {
@@ -67,7 +73,8 @@ public class Team {
 		this.last2SeriesVS=null;
 		this.schedule.clear();
 		this.restDays=23;
-		this.lastSeriesDoubleHeader=true;
+		this.seriesSinceDoubleHeader=0;
+		this.lastSeriesSinceDoubleHeader=0;
 	}
 	
 	public String areSeriesBalanced() {
@@ -99,13 +106,11 @@ public class Team {
 		}else {
 			this.gamesWithoutBreak -= e.games();
 			
-			Event last = theSchedule.get(theSchedule.size()-2);
-			int offSet=3;
-			while (last instanceof OffDay) {
-				last = theSchedule.get(theSchedule.size()-offSet);
-				offSet++;
+			if(this.seriesSinceDoubleHeader==0) {
+				this.seriesSinceDoubleHeader=lastSeriesSinceDoubleHeader;
+			}else {
+				this.seriesSinceDoubleHeader--;
 			}
-			lastSeriesDoubleHeader=((Series)last).hasDoubleHeader();
 			if(e.homeTeam()==this) {
 				this.consecutiveHomeGames -= e.games();
 				if(this.consecutiveHomeGames==0) {
@@ -174,7 +179,12 @@ public class Team {
 			}
 			this.last2SeriesVS=this.lastSeriesVS;
 			this.lastSeriesVS=s.getOpponent(this);
-			this.lastSeriesDoubleHeader = s.hasDoubleHeader();
+			if(s.hasDoubleHeader()) {
+				this.lastSeriesSinceDoubleHeader=this.seriesSinceDoubleHeader;
+				this.seriesSinceDoubleHeader=0;
+			}else {
+				this.seriesSinceDoubleHeader++;
+			}
 		}else if(event instanceof OffDay){
 			this.gamesWithoutBreak=0;
 			if(event.length()==1) {
@@ -205,7 +215,7 @@ public class Team {
 		}else if(this.consecutiveAwayGames > Team.maxStand-Series.getMaxSeriesLen()) {
 			retVal+=4;
 		}
-		if(this.lastSeriesDoubleHeader) {
+		if(this.seriesSinceDoubleHeader==0) {
 			retVal+=8;
 		}
 		
